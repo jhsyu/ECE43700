@@ -29,5 +29,6 @@ assign rfif.WEN = ~KEY[3];
 
 assign LEDR[8:5] = rfif.rdat1[3:0];
 assign LEDR[13:10] = rfif.rdat2[3:0];
+//assign LEDR[15] = KEY[0]; 
 
 endmodule
