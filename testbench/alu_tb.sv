@@ -39,7 +39,10 @@ program test(
         input expected_output
     );
         assert (real_input == expected_output)
-            else ERR = 1'b1; 
+            else begin
+                ERR = 1'b1; 
+                $error("Wrong output port. expecting %d, but read %d", expected_output, real_input);
+            end
     endtask
 
     task check_flags(
@@ -234,7 +237,7 @@ program test(
             end
         end
         #(5);
-        if (!ERR) begin
+        if (ERR) begin
             $display("ERROR exist."); 
         end
     end
