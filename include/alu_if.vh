@@ -2,7 +2,7 @@
 `define ALU_IF_VH
 `include "cpu_types_pkg.vh"
 
-interface name;
+interface alu_if;
     import cpu_types_pkg::*;
     /*
                     == INPUT ==
@@ -15,6 +15,8 @@ interface name;
     z:      zero flag, output. 
     v:      overflow flag, output. 
     */
+
+    // R-Type: connect port A to Rs, port B to Rt. 
     aluop_t aluop; 
     word_t port_a, port_b, port_o; 
     logic n, z, v; 
@@ -30,4 +32,4 @@ interface name;
         output port_a, port_b, aluop
     ); 
 endinterface
-endif
+`endif
