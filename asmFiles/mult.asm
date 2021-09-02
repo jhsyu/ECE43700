@@ -4,7 +4,7 @@
 org 0x0
 MAIN: 
     ori $sp, $zero, 0xFFFC      # initialize the stack pointer. 
-    ori $a0, $zero, 1
+    ori $a0, $zero, 4
     ori $a1, $zero, 3           # place the oprands in the argument register. 
     push $a0
     push $a1                    # push the oprands into stack. 

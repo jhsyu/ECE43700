@@ -7,7 +7,7 @@ MAIN:
     ori     $t0, $zero, 4
     ori     $t1, $zero, 3
     ori     $t2, $zero, 2
-    ori     $t3, $zero, 1
+    ori     $t3, $zero, 2
     push    $t3
     or      $s0, $zero, $sp     # 1 oprand in stack. 
     push    $t2

@@ -5,7 +5,7 @@ org     0x0
 
 MAIN: 
     ori     $s0, $zero, 2021    # year
-    ori     $s1, $zero, 1       # month
+    ori     $s1, $zero, 9       # month
     ori     $s2, $zero, 1       # day
 
     ori     $t0, $zero, 365
