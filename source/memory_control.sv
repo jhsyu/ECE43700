@@ -24,7 +24,7 @@ module memory_control (
   assign ccif.iload = ccif.ramload;
   assign ccif.dload = ccif.ramload;
   assign ccif.ramstore = ccif.dstore;
-  assign ccif.ramaddr = (ccif.dREN || ccif.dWEN) ? ccif.daddr : ccif.iaddr;
+  assign ccif.ramaddr = (ccif.dREN | ccif.dWEN) ? ccif.daddr : ccif.iaddr;
 
   always_comb begin
     ccif.iwait = 1'b1; 
