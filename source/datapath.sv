@@ -149,6 +149,7 @@ module datapath (
   assign ex_mem_in.pc = id_ex_out.pc; 
   assign ex_mem_in.pc4 = id_ex_out.pc4; 
   assign ex_mem_in.alu_out = aluif.port_o; 
+  assign ex_mem_in.rdat1 = id_ex_out.rdat1; 
   assign ex_mem_in.rdat2 = id_ex_out.rdat2; 
   assign ex_mem_in.halt = id_ex_out.halt; 
   assign ex_mem_in.regsrc = id_ex_out.regsrc; 
@@ -160,17 +161,27 @@ module datapath (
 
   // PC
   // TODO: moving pcsrc logic from control unit to here. 
-  
+  pcsrc_t pcsrc; 
+  always_comb begin
+    casez(opcode_t'(ex_mem_out.imemload[31:26]))
+      HALT:     pcsrc = PCSRC_CPC; 
+      JR:       pcsrc - PCSRC_REG; 
+      JAL,J:    pcsrc = PCSRC_JAL; 
+      BEQ:      pcsrc = (ex_mem_out.zero) ? PCSRC_IMM : PCSRC_PC4; 
+      BNE:      pcsrc = (ex_mem_out.zero) ? PCSRC_PC4 : PCSRC_IMM; 
+      default:  pcsrc = PCSRC_PC4; 
+    endcase
+  end
 
   always_comb begin : PC_MUX
-    casez (cuif.pcsrc)
-        PCSRC_CPC: npc = cpc; 
-        PCSRC_NPC: npc = pc4;
-        PCSRC_REG: npc = rfif.rdat1; 
-        PCSRC_JAL: npc = jaddr; 
-        PCSRC_IMM: npc = baddr; 
+    casez (pcsrc)
+        PCSRC_CPC: mem_wb_in.npc = ex_mem_out.pc; 
+        PCSRC_PC4: mem_wb_in.npc = ex_mem_out.pc4;
+        PCSRC_REG: mem_wb_in.npc = ex_mem_out.rdat1; 
+        PCSRC_JAL: mem_wb_in.npc = ex_mem_out.jaddr; 
+        PCSRC_IMM: mem_wb_in.npc = ex_mem_out.baddr; 
       default: 
-        npc = pc4; 
+        mem_wb_in.npc = ex_mem_out.pc4; 
     endcase
     if (~dpif.ihit) begin
       npc = cpc;  // stall the increment on pc when instruction is not ready. 
