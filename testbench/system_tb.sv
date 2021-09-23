@@ -52,7 +52,7 @@ module system_tb;
     // The 'rt' portion of an instruction
     .rt(DUT.CPU.DP.cpu_tracker_rt),
     // The final wsel
-    .wsel(DUT.CPU.DP.mem_wb_out.regtbw),
+    .wsel(DUT.CPU.DP.rfif.wsel),
     // The 32 bit instruction
     .instr(DUT.CPU.DP.mem_wb_out.imemload),
     // Connect the PC to this
@@ -62,7 +62,7 @@ module system_tb;
     // The final imm/shamt signals
     // This means it should already be extended 
     .imm(DUT.CPU.DP.mem_wb_out.imm32),
-    .shamt('0),
+    .shamt(DUT.CPU.DP.mem_wb_out.imemload[10:6]),
     // the value for lui BEFORE being being shifted
      .lui_pre_shift(DUT.CPU.DP.mem_wb_out.lui_ext[31:16]),
     // The branch target (aka offset added to npc)

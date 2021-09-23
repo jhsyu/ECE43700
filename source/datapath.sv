@@ -58,38 +58,11 @@ module datapath (
 	    mem_wb_out <= mem_wb_out;
     end
   end
-
-
-   
-  // new memory latching
-  MEM_WB_DATA_t mem_wb_data_in, mem_wb_data_out;
-
-  always_ff @(posedge CLK, negedge nRST) begin
-    if (~nRST) begin
-      mem_wb_data_out <= '0;
-    end
-    else if (dpif.dhit) begin // latch enable on dhit for dload
-      mem_wb_data_out <= mem_wb_data_in;
-    end
-    else begin
-      mem_wb_data_out <= mem_wb_data_out;
-    end
-  end
-
-  assign mem_wb_data_in.dload = dpif.dmemload;
-  // use mem_wb_data_out.dload for wdat latch
-
-  assign dpif.imemREN = 1'b1;
-  assign dpif.dmemREN = ~dpif.dhit & ex_mem_out.dREN;
-  assign dpif.dmemWEN = ~dpif.dhit & ex_mem_out.dWEN;
-  // end of new memory latching
-
-
    
 
   // IF (Instruction Fetch): PC update. 
   parameter PC_INIT = 0;
-  logic cpc, npc, pc4; 
+  word_t cpc, npc, pc4; 
   assign pc4 = cpc + 4; 
   assign npc = mem_wb_out.npc;  
   always_ff @(posedge CLK, negedge nRST) begin : PC
@@ -226,18 +199,35 @@ module datapath (
   assign mem_wb_in.rdat2 = ex_mem_out.rdat2; 
   assign mem_wb_in.pc4 = ex_mem_out.pc4; 
 
-  // input of request unit. EN 
-  assign ruif.ihit = dpif.ihit; 
-  assign ruif.dhit = dpif.dhit; 
-  assign ruif.dREN = cuif.dREN; 
-  assign ruif.dWEN = cuif.dWEN; 
   // datapath cache interface connections. 
-  assign dpif.imemREN = ruif.imemREN; 
+
+  // new memory latching
+  MEM_WB_DATA_t mem_wb_data_in, mem_wb_data_out;
+
+  always_ff @(posedge CLK, negedge nRST) begin
+    if (~nRST) begin
+      mem_wb_data_out <= '0;
+    end
+    else if (dpif.dhit) begin // latch enable on dhit for dload
+      mem_wb_data_out <= mem_wb_data_in;
+    end
+    else begin
+      mem_wb_data_out <= mem_wb_data_out;
+    end
+  end
+
+  assign mem_wb_data_in.dload = dpif.dmemload;
+  // use mem_wb_data_out.dload for wdat latch
+
   assign dpif.imemaddr = cpc; 
-  assign dpif.dmemREN = ruif.dmemREN;
-  assign dpif.dmemWEN = ruif.dmemWEN; 
-  assign dpif.dmemstore = rfif.rdat2; 
-  assign dpif.dmemaddr = aluif.port_o; 
+  assign dpif.imemREN = 1'b1;
+  assign dpif.dmemREN = ~dpif.dhit & ex_mem_out.dREN;
+  assign dpif.dmemWEN = ~dpif.dhit & ex_mem_out.dWEN;
+  assign dpif.dmemaddr = ex_mem_out.alu_out; 
+  assign dpif.dmemstore = ex_mem_out.rdat2; 
+  // end of new memory latching
+
+
 
   always_ff @(posedge CLK, negedge nRST) begin : HALT_FF
     if (~nRST) begin
