@@ -63,27 +63,24 @@ module datapath (
   // IF (Instruction Fetch): PC update. 
   // TODO: assign npc from mem_wb . 
   parameter PC_INIT = 0;
-  logic pc, npc, pc4; 
-  assign pc4 = pc + 4; 
+  logic cpc, npc, pc4; 
+  assign pc4 = cpc + 4; 
   assign npc = ; 
   always_ff @(posedge CLK, negedge nRST) begin : PC
     if (~nRST) begin
-      pc <= PC_INIT; 
+      cpc <= PC_INIT; 
     end
     else begin
-      pc <= npc; 
+      cpc <= npc; 
     end
   end
 
   // IF/ID pipeline register connections. 
   assign if_id_in.imemload = dpif.imemload; 
-  assign if_id_in.pc = pc; 
+  assign if_id_in.pc = cpc; 
   assign if_id_in.pc4 = pc4; 
 
-  //ID stage work: 
   // control unit: 
-  // TODO: remove the dhit/ihit from control unit. 
-  // TODO: move pcsrc out of the control unit. 
   assign cuif.instr = word_t'(if_id_out.imemload); 
   // EXT unit: 
   word_t imm32; 
@@ -107,7 +104,7 @@ module datapath (
   assign rfif.rsel2 = if_id_out.imemload[20:16]; 
   assign rfif.wdat = (mem_wb_out.regsrc == REGSRC_ALU) ? mem_wb_out.alu_out : 
                      (mem_wb_out.regsrc == REGSRC_MEM) ? mem_wb_out.dmemload: 
-                     (mem_wb_out.regsrc == REGSRC_LUI) ? {mem_wb_out.imemload[15:0], 16'b0}: mem_wb_out.pc4; 
+                     (mem_wb_out.regsrc == REGSRC_LUI) ? mem_wb_out.lui_ext: mem_wb_out.pc4; 
   // ID/EX Connections. 
   assign id_ex_in.imemload = if_id_out.imemload; 
   assign id_ex_in.pc = if_id_out.pc; 
@@ -160,7 +157,6 @@ module datapath (
   assign ex_mem_in.zero = aluif.z; 
 
   // PC
-  // TODO: moving pcsrc logic from control unit to here. 
   pcsrc_t pcsrc; 
   always_comb begin
     casez(opcode_t'(ex_mem_out.imemload[31:26]))
@@ -187,7 +183,19 @@ module datapath (
       npc = cpc;  // stall the increment on pc when instruction is not ready. 
     end
   end
-  // input of request unit. 
+
+  // MEM/WB latch connections. 
+  assign mem_wb_in.imemload = ex_mem_out.imemload; 
+  assign mem_wb_in.dload = dpif.dmemload; 
+  assign mem_wb_in.alu_out = ex_mem_out.alu_out; 
+  assign mem_wb_in.lui_ext = ex_mem_out.lui_ext; 
+  assign mem_wb_in.regtbw = ex_mem_out.regtbw; 
+  assign mem_wb_in.halt = ex_mem_out.halt; 
+  assign mem_wb_in.regsrc = ex_mem_out.regsrc; 
+  assign mem_wb_in.regWEN = ex_mem_out.regWEN; 
+  assign mem_wb_in.imm32 = ex_mem_out.imm32; 
+
+  // input of request unit. EN 
   assign ruif.ihit = dpif.ihit; 
   assign ruif.dhit = dpif.dhit; 
   assign ruif.dREN = cuif.dREN; 
@@ -205,7 +213,7 @@ module datapath (
       dpif.halt <= 1'b0; 
     end
     else begin
-      dpif.halt <= cuif.halt | dpif.halt; 
+      dpif.halt <= mem_wb_out.halt | dpif.halt; 
     end
   end
 

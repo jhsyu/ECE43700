@@ -76,15 +76,11 @@ package dp_types_pkg;
        word_t imemload;
        word_t dload, alu_out;
        word_t lui_ext;
-       regbits_t reg_tbw;
-       opcode_t opcode;
-       funct_t funct;
+       regbits_t regtbw;
        logic halt;
        regsrc_t regsrc;
        logic regWEN;
        word_t imm32;
-       pcsrc_t pcsrc;
-       logic zero;
     } MEM_WB_t;
 
 endpackage
