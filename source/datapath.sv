@@ -46,14 +46,22 @@ module datapath (
       mem_wb_out <= '0; 
     end
     else if (dpif.ihit) begin
-	    if_id_out <= if_id_in; 
+      if_id_out <= if_id_in; 
 	    id_ex_out <= id_ex_in;
       ex_mem_out <= ex_mem_in; 
 	    mem_wb_out <= mem_wb_in;
     end
+
+    end
+    else begin
+	    if_id_out <= if_id_out; 
+	    id_ex_out <= id_ex_out;
+      ex_mem_out <= ex_mem_out; 
+	    mem_wb_out <= mem_wb_out;
+    end
   end
   // IF (Instruction Fetch): PC update. 
-  // TODO: assign npc.  
+  // TODO: assign npc from mem_wb . 
   parameter PC_INIT = 0;
   logic pc, npc, pc4; 
   assign pc4 = pc + 4; 
@@ -76,7 +84,6 @@ module datapath (
   // control unit: 
   // TODO: remove the dhit/ihit from control unit. 
   // TODO: move pcsrc out of the control unit. 
-  // TODO: replace the opcode and funct field by instr[31:0]. 
   assign cuif.instr = word_t'(if_id_out.imemload); 
   // EXT unit: 
   word_t imm32; 
@@ -95,9 +102,7 @@ module datapath (
 
   // register file connections. 
   assign rfif.WEN = mem_wb_out.regWEN; 
-  assign rfif.wsel =  (mem_wb_out.regdst == REGDST_RD) ? mem_wb_out.imemload[15:11] : 
-                      (mem_wb_out.regdst == REGDST_RT) ? mem_wb_out.imemload[20:16] : 
-                      (mem_wb_out.regdst == REGDST_RA) ? regbits_t'(5'd31) : regbits_t'(5'd0); 
+  assign rfif.wsel =  mem_wb_out.regtbw; 
   assign rfif.rsel1 = if_id_out.imemload[25:21]; 
   assign rfif.rsel2 = if_id_out.imemload[20:16]; 
   assign rfif.wdat = (mem_wb_out.regsrc == REGSRC_ALU) ? mem_wb_out.alu_out : 
@@ -118,12 +123,31 @@ module datapath (
   assign id_ex_in.regWEN = cuif.regWEN; 
   assign id_ex_in.dREN = cuif.dREN; 
   assign id_ex_in.dWEN = cuif.dWEN; 
+  assign id_ex_in.alusrc = cuif.alusrc; 
   assign id_ex_in.aluop = cuif.aluop; 
 
-  // PC
+  // EX stage. 
+  // ALU input. 
+  assign aluif.aluop = id_ex_out.aluop;  
+  assign aluif.port_a = id_ex_out.rdat1; 
+  assign aluif.port_b = (id_ex_out.alusrc == ALUSRC_REG) ? rfif.rdat2 : imm32; 
+
+  // deciding baddr and jaddr. 
   word_t jaddr, baddr; 
-  assign jaddr = {pc4[31:28], dpif.imemload[25:0], 2'b0}; 
-  assign baddr = pc4 + (imm32 << 2); 
+  assign jaddr = {id_ex_out.pc4[31:28], id_ex_out.imemload[25:0], 2'b0}; 
+  assign baddr = id_ex_out.pc4 + (id_ex_out.imm32 << 2); 
+
+  // lui ext. 
+  assign ex_mem_in.lui_ext = (id_ex_out.regsrc == REGSRC_LUI) ? {id_ex_out.imemload[15:0], 16'b0} : word_t'(32'b0); 
+
+  // decide regtbw. 
+  assign ex_mem_in.regtbw = (id_ex_out.regdst == REGDST_RD) ? id_ex_out.imemload[15:11] : 
+                            (id_ex_out.regdst == REGDST_RT) ? id_ex_out.imemload[20:16] : 
+                            (id_ex_out.regdst == REGDST_RA) ? regbits_t'(5'd31) : regbits_t'(5'd0); 
+
+  // EX/MEM latch connections. 
+
+  // PC
 
   always_comb begin : PC_MUX
     casez (cuif.pcsrc)
@@ -139,10 +163,6 @@ module datapath (
       npc = cpc;  // stall the increment on pc when instruction is not ready. 
     end
   end
-  // input of alu. 
-  assign aluif.port_a = rfif.rdat1; 
-  assign aluif.port_b = (cuif.alusrc == ALUSRC_REG) ? rfif.rdat2 : imm32; 
-  assign aluif.aluop = cuif.aluop; 
   // input of request unit. 
   assign ruif.ihit = dpif.ihit; 
   assign ruif.dhit = dpif.dhit; 
