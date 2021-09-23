@@ -186,7 +186,7 @@ module datapath (
 
   // MEM/WB latch connections. 
   assign mem_wb_in.imemload = ex_mem_out.imemload; 
-  assign mem_wb_in.dload = dpif.dmemload; 
+  //assign mem_wb_in.dload = dpif.dmemload; 
   assign mem_wb_in.alu_out = ex_mem_out.alu_out; 
   assign mem_wb_in.lui_ext = ex_mem_out.lui_ext; 
   assign mem_wb_in.regtbw = ex_mem_out.regtbw; 
@@ -216,6 +216,9 @@ module datapath (
       dpif.halt <= mem_wb_out.halt | dpif.halt; 
     end
   end
+
+  cpu_tracker_if MW_o(); 
+  
 
 
   // register file
