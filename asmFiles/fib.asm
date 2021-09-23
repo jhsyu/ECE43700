@@ -1,29 +1,33 @@
-org 0x0
-MAIN: 
-    ori     $a0, $zero, 2       # driver function. 
-    jal     FIB0                # will not be counted. 
-EXIT: 
-    halt
+#--------------------------------------
+# Test with a fibonacci sequence
+#--------------------------------------
+  org 0x0000
 
-FIB0: 
-    addi    $v0, $zero, 0       # set $v0 as 0, and return 
-    beq     $a0, $zero, RTN     # if n == 0. 
-FIB1: 
-    addi    $v0, $zero, 1       # set $v0 as 1, and return. 
-    beq     $a0, $v0, RTN       # if n == 1. 
-FIBN: 
-    push    $ra                 # use stack to store return addr
-    push    $a0                 # and n in $a0. 
-    addi    $a0, $a0, -1        
-    jal     FIB0                # call $v0 = fib(n-1)
-    pop     $a0                 # restore n in $a0. 
-    push    $v0                 # store $v0 = fib(n-1)
-    addi    $a0, $a0, -2        
-    jal     FIB0                # call fib(n-2)
-    pop     $t0                 # $t0 = fib(n-1)
-    add     $v0, $v0, $t0       # fib(n-1) + fib(n-2)
-    pop     $ra
-RTN: 
-    jr      $ra
+  ori   $2, $2, start
+  ori   $1, $1, 1
+  ori   $8, $8, 4
+  ori   $6, $6, 0x0F00
+  lw    $15, 0($6)
 
+loop:
+  lw    $3, 0 ($2)
+  lw    $4, 4 ($2)
+  addu  $5, $3, $4
+  sw    $5, 8 ($2)
+  addu  $2, $2, $8
+  subu  $15, $15, $1
+  bne   $15, $zero, loop
+end:
+  halt
 
+  org 0x80
+
+start:
+  cfw 0
+  cfw 1
+
+#uncomment to work with the simulator (sim)
+# comment to use mmio
+
+  org 0x0F00
+  cfw 22
