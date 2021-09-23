@@ -230,6 +230,8 @@ module datapath (
   regbits_t cpu_tracker_rs, cpu_tracker_rt; 
   assign cpu_tracker_rs = regbits_t'(mem_wb_out.imemload[25:21]);
   assign cpu_tracker_rt = regbits_t'(mem_wb_out.imemload[20:16]);
+  logic wb_enable; 
+  assign wb_enable = ~stall & (dpif.ihit | dpif.dhit); 
 
 
   // register file

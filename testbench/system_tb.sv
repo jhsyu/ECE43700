@@ -42,7 +42,7 @@ module system_tb;
     // No need to change this
     .CLK(DUT.CPU.DP.CLK),
     // This is the enable signal for the write back stage
-    .wb_enable(DUT.CPU.DP.dpif.ihit),
+    .wb_enable(DUT.CPU.DP.wb_enable),
     // The 'funct' portion of an instruction. Must be of funct_t type
     .funct(DUT.CPU.DP.cpu_tracker_funct),
     // The 'opcode' portion of an instruction. Must be of opcode_t type
@@ -56,7 +56,7 @@ module system_tb;
     // The 32 bit instruction
     .instr(DUT.CPU.DP.mem_wb_out.imemload),
     // Connect the PC to this
-    .pc(DUT.CPU.DP.cpc),
+    .pc(DUT.CPU.DP.mem_wb_out.pc),
     // Connect the next PC value (the next registered value) here
     .next_pc_val(DUT.CPU.DP.npc),
     // The final imm/shamt signals
