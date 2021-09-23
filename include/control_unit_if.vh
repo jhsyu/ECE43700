@@ -18,11 +18,12 @@ interface control_unit_if;
     alusrc_t alusrc;
     aluop_t aluop; 
     logic zero; 
+    pcsrc_t pcsrc;
 
     modport cu (
         input   opcode, funct,
         output  aluop, halt,
-                regsrc, regdst, regWEN, 
+                regsrc, regdst, regWEN, pcsrc,
                 extsel, 
                 alusrc, 
                 dREN, dWEN
@@ -31,7 +32,7 @@ interface control_unit_if;
     modport tb (
         output  opcode, funct,
         input   aluop, halt,
-                regsrc, regdst, regWEN, 
+                regsrc, regdst, regWEN, pcsrc,
                 extsel, 
                 alusrc, 
                 dREN, dWEN

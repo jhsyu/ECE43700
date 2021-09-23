@@ -21,6 +21,7 @@ module control_unit (
         cuif.dWEN = 1'b0; 
         cuif.aluop = ALU_SLL; 
         cuif.halt = 1'b0; 
+        cuif.pcsrc = PCSRC_PC4;
         casez (cuif.opcode)
             RTYPE: begin
                 cuif.regsrc = REGSRC_ALU; 
@@ -39,7 +40,8 @@ module control_unit (
                     SLT:        cuif.aluop = ALU_SLT; 
                     SLTU:       cuif.aluop = ALU_SLTU; 
                     JR: begin
-                        cuif.regWEN = 1'b0;  
+                        cuif.regWEN = 1'b0; 
+                        cuif.pcsrc =  PCSRC_REG; 
                     end
                     default:    cuif.aluop = ALU_SLL; 
                 endcase
@@ -47,10 +49,12 @@ module control_unit (
             BEQ: begin
                 cuif.extsel = SIGN_EXT; 
                 cuif.aluop = ALU_SUB; 
+                cuif.pcsrc = PCSRC_BEQ; 
             end
             BNE: begin
                 cuif.extsel = SIGN_EXT; 
                 cuif.aluop = ALU_SUB; 
+                cuif.pcsrc = PCSRC_BNE;  
 
             end
             ADDI, ADDIU: begin
@@ -118,11 +122,13 @@ module control_unit (
                 cuif.regsrc = REGSRC_NPC; 
                 cuif.regdst = REGDST_RA; 
                 cuif.regWEN = 1'b1; 
+                cuif.pcsrc = PCSRC_JAL; 
             end
             HALT: begin
                 cuif.halt = 1'b1; 
             end
             default: begin
+                cuif.pcsrc = PCSRC_PC4; 
                 cuif.regsrc = REGSRC_ALU; 
                 cuif.regdst = REGDST_RD; 
                 cuif.regWEN = 1'b0; 

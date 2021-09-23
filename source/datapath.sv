@@ -45,7 +45,7 @@ module datapath (
       ex_mem_out <= '0; 
       mem_wb_out <= '0; 
     end
-    else if (dpif.ihit) begin
+    else if (dpif.ihit | dpif.dhit) begin
       if_id_out <= if_id_in; 
 	    id_ex_out <= id_ex_in;
       ex_mem_out <= ex_mem_in; 
@@ -61,18 +61,27 @@ module datapath (
    
 
   // IF (Instruction Fetch): PC update. 
+  logic halt, pcen; 
+  assign halt = opcode_t'(mem_wb_in.imemload[31:26]) == HALT; 
+  assign pcen = ~halt & dpif.ihit; 
+
   parameter PC_INIT = 0;
   word_t cpc, npc, pc4; 
   assign pc4 = cpc + 4; 
-  assign npc = mem_wb_out.npc;  
   always_ff @(posedge CLK, negedge nRST) begin : PC
     if (~nRST) begin
       cpc <= PC_INIT; 
     end
-    else begin
+    else if (pcen) begin
       cpc <= npc; 
     end
+    else begin
+      cpc <= cpc; 
+    end
   end
+    
+  assign dpif.imemaddr = cpc; 
+  assign dpif.imemREN = 1'b1;
 
   // IF/ID pipeline register connections. 
   assign if_id_in.imemload = dpif.imemload; 
@@ -103,7 +112,7 @@ module datapath (
   assign rfif.rsel1 = regbits_t'(if_id_out.imemload[25:21]); 
   assign rfif.rsel2 = regbits_t'(if_id_out.imemload[20:16]); 
   assign rfif.wdat = (mem_wb_out.regsrc == REGSRC_ALU) ? mem_wb_out.alu_out : 
-                     (mem_wb_out.regsrc == REGSRC_MEM) ? mem_wb_data_out.dload: 
+                     (mem_wb_out.regsrc == REGSRC_MEM) ? mem_wb_out.dload: 
                      (mem_wb_out.regsrc == REGSRC_LUI) ? mem_wb_out.lui_ext: mem_wb_out.pc4; 
   // ID/EX Connections. 
   assign id_ex_in.imemload = if_id_out.imemload; 
@@ -121,7 +130,8 @@ module datapath (
   assign id_ex_in.dREN = cuif.dREN; 
   assign id_ex_in.dWEN = cuif.dWEN; 
   assign id_ex_in.alusrc = cuif.alusrc; 
-  assign id_ex_in.aluop = cuif.aluop; 
+  assign id_ex_in.aluop = cuif.aluop;
+  assign id_ex_in.pcsrc = cuif.pcsrc;  
 
   // EX stage. 
   // ALU input. 
@@ -155,38 +165,25 @@ module datapath (
   assign ex_mem_in.dREN = id_ex_out.dREN; 
   assign ex_mem_in.dWEN = id_ex_out.dWEN; 
   assign ex_mem_in.zero = aluif.z; 
+  assign ex_mem_in.pcsrc = id_ex_out.pcsrc; 
 
   // PC
-  pcsrc_t pcsrc; 
-  always_comb begin
-    casez(opcode_t'(ex_mem_out.imemload[31:26]))
-      HALT:     pcsrc = PCSRC_CPC; 
-      JR:       pcsrc = PCSRC_REG; 
-      JAL,J:    pcsrc = PCSRC_JAL; 
-      BEQ:      pcsrc = (ex_mem_out.zero) ? PCSRC_IMM : PCSRC_PC4; 
-      BNE:      pcsrc = (ex_mem_out.zero) ? PCSRC_PC4 : PCSRC_IMM; 
-      default:  pcsrc = PCSRC_PC4; 
-    endcase
-  end
 
   always_comb begin : PC_MUX
-    casez (pcsrc)
-        PCSRC_CPC: mem_wb_in.npc = ex_mem_out.pc; 
-        PCSRC_PC4: mem_wb_in.npc = ex_mem_out.pc4;
-        PCSRC_REG: mem_wb_in.npc = ex_mem_out.rdat1; 
-        PCSRC_JAL: mem_wb_in.npc = ex_mem_out.jaddr; 
-        PCSRC_IMM: mem_wb_in.npc = ex_mem_out.baddr; 
+    casez (ex_mem_out.pcsrc)
+        PCSRC_PC4: npc = ex_mem_out.pc4;
+        PCSRC_REG: npc = ex_mem_out.rdat1; 
+        PCSRC_JAL: npc = ex_mem_out.jaddr; 
+        PCSRC_BEQ: npc = (ex_mem_out.zero) ? ex_mem_out.baddr : ex_mem_out.pc4; 
+        PCSRC_BNE: npc = (ex_mem_out.zero) ? ex_mem_out.pc4 : ex_mem_out.baddr;
       default: 
         mem_wb_in.npc = ex_mem_out.pc4; 
     endcase
-    if (~dpif.ihit) begin
-      mem_wb_in.npc =  ex_mem_out.pc;  // stall the increment on pc when instruction is not ready. 
-    end
   end
 
   // MEM/WB latch connections. 
   assign mem_wb_in.imemload = ex_mem_out.imemload; 
-  //assign mem_wb_in.dload = dpif.dmemload; 
+  assign mem_wb_in.dload = dpif.dmemload; 
   assign mem_wb_in.alu_out = ex_mem_out.alu_out; 
   assign mem_wb_in.lui_ext = ex_mem_out.lui_ext; 
   assign mem_wb_in.regtbw = ex_mem_out.regtbw; 
@@ -201,42 +198,11 @@ module datapath (
 
   // datapath cache interface connections. 
 
-  // new memory latching
-  MEM_WB_DATA_t mem_wb_data_in, mem_wb_data_out;
-
-  always_ff @(posedge CLK, negedge nRST) begin
-    if (~nRST) begin
-      mem_wb_data_out <= '0;
-    end
-    else if (dpif.dhit) begin // latch enable on dhit for dload
-      mem_wb_data_out <= mem_wb_data_in;
-    end
-    else begin
-      mem_wb_data_out <= mem_wb_data_out;
-    end
-  end
-
-  assign mem_wb_data_in.dload = dpif.dmemload;
-  // use mem_wb_data_out.dload for wdat latch
-
-  assign dpif.imemaddr = cpc; 
-  assign dpif.imemREN = 1'b1;
-  assign dpif.dmemREN = ~dpif.dhit & ex_mem_out.dREN;
-  assign dpif.dmemWEN = ~dpif.dhit & ex_mem_out.dWEN;
+  assign dpif.dmemREN = ex_mem_out.dREN;
+  assign dpif.dmemWEN = ex_mem_out.dWEN;
   assign dpif.dmemaddr = ex_mem_out.alu_out; 
   assign dpif.dmemstore = ex_mem_out.rdat2; 
-  // end of new memory latching
 
-
-
-  always_ff @(posedge CLK, negedge nRST) begin : HALT_FF
-    if (~nRST) begin
-      dpif.halt <= 1'b0; 
-    end
-    else begin
-      dpif.halt <= mem_wb_out.halt | dpif.halt; 
-    end
-  end
 
   // cpu tracker signals.
   opcode_t cpu_tracker_opcode;

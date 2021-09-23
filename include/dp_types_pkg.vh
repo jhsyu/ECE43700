@@ -25,11 +25,12 @@ package dp_types_pkg;
     } extsel_t; 
 
     typedef enum logic [2:0] {
-        PCSRC_CPC = 3'h0,           // PC, for halt
+        //PCSRC_CPC = 3'h0,           // PC, for halt
         PCSRC_PC4 = 3'h1,           // PC + 4
         PCSRC_REG = 3'h2,           // jr
         PCSRC_JAL = 3'h3,           // imm26
-        PCSRC_IMM = 3'h4            // branch
+        PCSRC_BEQ = 3'h4,
+        PCSRC_BNE = 3'h5            // beq
     } pcsrc_t; 
 
     typedef enum logic {
@@ -44,6 +45,7 @@ package dp_types_pkg;
    
     typedef struct packed {
        word_t imemload;
+       pcsrc_t pcsrc; 
        word_t pc, pc4;
        word_t rdat1, rdat2;
        regbits_t rt, rd;
@@ -60,6 +62,7 @@ package dp_types_pkg;
 
     typedef struct packed {
        word_t imemload;
+       pcsrc_t pcsrc; 
        word_t pc, pc4;
        word_t alu_out, rdat1, rdat2;
        word_t lui_ext, baddr, jaddr;
