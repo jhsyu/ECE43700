@@ -6,8 +6,7 @@
 import cpu_types_pkg::*;
 import dp_types_pkg::*; 
 
-interface control_unit_if; 
-    logic ihit, dhit; 
+interface control_unit_if;  
     opcode_t opcode; 
     funct_t funct; 
     logic halt; 
@@ -18,27 +17,24 @@ interface control_unit_if;
     logic dREN, dWEN; 
     alusrc_t alusrc;
     aluop_t aluop; 
-    pcsrc_t pcsrc; 
     logic zero; 
 
     modport cu (
-        input   ihit, dhit, zero, opcode, funct,
+        input   zero, opcode, funct,
         output  aluop, halt,
                 regsrc, regdst, regWEN, 
                 extsel, 
                 alusrc, 
-                dREN, dWEN, 
-                pcsrc
+                dREN, dWEN
     ); 
 
     modport tb (
-        output  ihit, dhit, zero, opcode, funct,
+        output  zero, opcode, funct,
         input   aluop, halt,
                 regsrc, regdst, regWEN, 
                 extsel, 
                 alusrc, 
-                dREN, dWEN, 
-                pcsrc
+                dREN, dWEN
     ); 
 endinterface
 `endif 
