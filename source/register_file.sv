@@ -8,7 +8,7 @@ module register_file(
 );
 	import cpu_types_pkg::*; 
 	word_t [31:0] reg_curr, reg_next;
-	always_ff @(posedge CLK, negedge nRST) begin
+	always_ff @(negedge CLK, negedge nRST) begin
 		// reg_curr <= reg_next; 
 		if (~nRST) begin
 			reg_curr <= '0;

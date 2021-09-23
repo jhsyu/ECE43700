@@ -37,6 +37,7 @@ module datapath (
   MEM_WB_t mem_wb_in, mem_wb_out;
 
   // pipeline latches
+  logic stall;
   
   always_ff @(posedge CLK, negedge nRST) begin
     if (~nRST) begin
@@ -44,6 +45,12 @@ module datapath (
       id_ex_out <= '0; 
       ex_mem_out <= '0; 
       mem_wb_out <= '0; 
+    end
+    else if (stall) begin
+	    if_id_out <= if_id_out; 
+	    id_ex_out <= id_ex_out;
+      ex_mem_out <= ex_mem_out; 
+	    mem_wb_out <= mem_wb_out;
     end
     else if (dpif.ihit | dpif.dhit) begin
       if_id_out <= if_id_in; 
@@ -62,8 +69,9 @@ module datapath (
 
   // IF (Instruction Fetch): PC update. 
   logic halt, pcen; 
-  assign halt = opcode_t'(mem_wb_in.imemload[31:26]) == HALT; 
-  assign pcen = ~halt & dpif.ihit; 
+  assign halt = opcode_t'(dpif.imemload[31:26]) == HALT; 
+  assign stall = (opcode_t'((ex_mem_out.imemload[31:26]) == LW) | (ex_mem_out.imemload[31:26] == SW) && ~dpif.dhit); 
+  assign pcen = ~halt & ~stall & dpif.ihit; 
 
   parameter PC_INIT = 0;
   word_t cpc, npc, pc4; 
@@ -84,7 +92,7 @@ module datapath (
   assign dpif.imemREN = 1'b1;
 
   // IF/ID pipeline register connections. 
-  assign if_id_in.imemload = dpif.imemload; 
+  assign if_id_in.imemload = (dpif.ihit) ? dpif.imemload : word_t'(0); 
   assign if_id_in.pc = cpc; 
   assign if_id_in.pc4 = pc4; 
 
@@ -137,7 +145,7 @@ module datapath (
   // ALU input. 
   assign aluif.aluop = id_ex_out.aluop;  
   assign aluif.port_a = id_ex_out.rdat1; 
-  assign aluif.port_b = (id_ex_out.alusrc == ALUSRC_REG) ? rfif.rdat2 : imm32; 
+  assign aluif.port_b = (id_ex_out.alusrc == ALUSRC_REG) ? id_ex_out.rdat2 : id_ex_out.imm32; 
 
   // deciding baddr and jaddr. 
   assign ex_mem_in.jaddr = {id_ex_out.pc4[31:28], id_ex_out.imemload[25:0], 2'b0}; 
@@ -171,13 +179,13 @@ module datapath (
 
   always_comb begin : PC_MUX
     casez (ex_mem_out.pcsrc)
-        PCSRC_PC4: npc = ex_mem_out.pc4;
+        PCSRC_PC4: npc = pc4;
         PCSRC_REG: npc = ex_mem_out.rdat1; 
         PCSRC_JAL: npc = ex_mem_out.jaddr; 
-        PCSRC_BEQ: npc = (ex_mem_out.zero) ? ex_mem_out.baddr : ex_mem_out.pc4; 
-        PCSRC_BNE: npc = (ex_mem_out.zero) ? ex_mem_out.pc4 : ex_mem_out.baddr;
+        PCSRC_BEQ: npc = (ex_mem_out.zero) ? ex_mem_out.baddr : pc4; 
+        PCSRC_BNE: npc = (ex_mem_out.zero) ? pc4 : ex_mem_out.baddr;
       default: 
-        npc = ex_mem_out.pc4; 
+        npc = pc4; 
     endcase
   end
 
@@ -195,6 +203,7 @@ module datapath (
   assign mem_wb_in.baddr = ex_mem_out.baddr; 
   assign mem_wb_in.rdat2 = ex_mem_out.rdat2; 
   assign mem_wb_in.pc4 = ex_mem_out.pc4; 
+  assign mem_wb_in.pc = ex_mem_out.pc; 
 
   // datapath cache interface connections. 
 
