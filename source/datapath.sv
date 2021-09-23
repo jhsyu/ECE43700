@@ -88,11 +88,10 @@ module datapath (
    
 
   // IF (Instruction Fetch): PC update. 
-  // TODO: assign npc from mem_wb . 
   parameter PC_INIT = 0;
   logic cpc, npc, pc4; 
   assign pc4 = cpc + 4; 
-  assign npc = ; 
+  assign npc = mem_wb_out.npc;  
   always_ff @(posedge CLK, negedge nRST) begin : PC
     if (~nRST) begin
       cpc <= PC_INIT; 
@@ -115,23 +114,23 @@ module datapath (
   always_comb begin : EXT
     imm32 = {16'b0, if_id_out.imemload[15:0]};          // default is zero ext.
     if (cuif.extsel) begin                              // signed ext.
-      if (dpif.imemload[15]) begin                      // negative.
-        imm32 = {16'hFFFF, dpif.imemload[15:0]};  
+      if (if_id_out.imemload[15]) begin                      // negative.
+        imm32 = {16'hFFFF, if_id_out.imemload[15:0]};  
       end
-      else imm32 = {16'b0, dpif.imemload[15:0]};  // positive. 
+      else imm32 = {16'b0, if_id_out.imemload[15:0]};  // positive. 
     end
     else begin                                    // zero extention. 
-      imm32 = {16'b0, dpif.imemload[15:0]}; 
+      imm32 = {16'b0, if_id_out.imemload[15:0]}; 
     end
   end
 
   // register file connections. 
   assign rfif.WEN = mem_wb_out.regWEN; 
   assign rfif.wsel =  mem_wb_out.regtbw; 
-  assign rfif.rsel1 = if_id_out.imemload[25:21]; 
-  assign rfif.rsel2 = if_id_out.imemload[20:16]; 
+  assign rfif.rsel1 = regbits_t'(if_id_out.imemload[25:21]); 
+  assign rfif.rsel2 = regbits_t'(if_id_out.imemload[20:16]); 
   assign rfif.wdat = (mem_wb_out.regsrc == REGSRC_ALU) ? mem_wb_out.alu_out : 
-                     (mem_wb_out.regsrc == REGSRC_MEM) ? mem_wb_out.dmemload: 
+                     (mem_wb_out.regsrc == REGSRC_MEM) ? mem_wb_data_out.dload: 
                      (mem_wb_out.regsrc == REGSRC_LUI) ? mem_wb_out.lui_ext: mem_wb_out.pc4; 
   // ID/EX Connections. 
   assign id_ex_in.imemload = if_id_out.imemload; 
@@ -189,7 +188,7 @@ module datapath (
   always_comb begin
     casez(opcode_t'(ex_mem_out.imemload[31:26]))
       HALT:     pcsrc = PCSRC_CPC; 
-      JR:       pcsrc - PCSRC_REG; 
+      JR:       pcsrc = PCSRC_REG; 
       JAL,J:    pcsrc = PCSRC_JAL; 
       BEQ:      pcsrc = (ex_mem_out.zero) ? PCSRC_IMM : PCSRC_PC4; 
       BNE:      pcsrc = (ex_mem_out.zero) ? PCSRC_PC4 : PCSRC_IMM; 
@@ -208,7 +207,7 @@ module datapath (
         mem_wb_in.npc = ex_mem_out.pc4; 
     endcase
     if (~dpif.ihit) begin
-      npc = cpc;  // stall the increment on pc when instruction is not ready. 
+      mem_wb_in.npc =  ex_mem_out.pc;  // stall the increment on pc when instruction is not ready. 
     end
   end
 
@@ -222,6 +221,10 @@ module datapath (
   assign mem_wb_in.regsrc = ex_mem_out.regsrc; 
   assign mem_wb_in.regWEN = ex_mem_out.regWEN; 
   assign mem_wb_in.imm32 = ex_mem_out.imm32; 
+
+  assign mem_wb_in.baddr = ex_mem_out.baddr; 
+  assign mem_wb_in.rdat2 = ex_mem_out.rdat2; 
+  assign mem_wb_in.pc4 = ex_mem_out.pc4; 
 
   // input of request unit. EN 
   assign ruif.ihit = dpif.ihit; 
@@ -244,6 +247,16 @@ module datapath (
       dpif.halt <= mem_wb_out.halt | dpif.halt; 
     end
   end
+
+  // cpu tracker signals.
+  opcode_t cpu_tracker_opcode;
+  assign cpu_tracker_opcode = opcode_t'(mem_wb_out.imemload[31:26]);  
+  funct_t cpu_tracker_funct; 
+  assign cpu_tracker_funct = funct_t'(mem_wb_out.imemload[5:0]);
+  regbits_t cpu_tracker_rs, cpu_tracker_rt; 
+  assign cpu_tracker_rs = regbits_t'(mem_wb_out.imemload[25:21]);
+  assign cpu_tracker_rt = regbits_t'(mem_wb_out.imemload[20:16]);
+
 
   // register file
   register_file rf(.CLK(CLK), .nRST(nRST), .rfif(rfif)); 

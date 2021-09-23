@@ -73,6 +73,7 @@ package dp_types_pkg;
     } EX_MEM_t;
 
     typedef struct packed {
+        word_t pc4, npc; 
        word_t imemload;
        word_t dload, alu_out;
        word_t lui_ext;
@@ -81,6 +82,8 @@ package dp_types_pkg;
        regsrc_t regsrc;
        logic regWEN;
        word_t imm32;
+       // signals for cpu tracker. 
+       word_t baddr, rdat2; 
     } MEM_WB_t;
 
     // new memory typedef

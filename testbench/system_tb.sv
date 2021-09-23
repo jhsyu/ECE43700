@@ -1,10 +1,8 @@
 /*
   Eric Villasenor
   evillase@gmail.com
-
   system test bench, for connected processor (datapath+cache)
   and memory (ram).
-
 */
 
 // interface
@@ -46,35 +44,35 @@ module system_tb;
     // This is the enable signal for the write back stage
     .wb_enable(DUT.CPU.DP.dpif.ihit),
     // The 'funct' portion of an instruction. Must be of funct_t type
-    .funct(DUT.CPU.DP.mem_wb_out.imemload[5:0]),
+    .funct(DUT.CPU.DP.cpu_tracker_funct),
     // The 'opcode' portion of an instruction. Must be of opcode_t type
-    .opcode(DUT.CPU.DP.mem_wb_out.imemload[31:26]),
+    .opcode(DUT.CPU.DP.cpu_tracker_opcode),
     // The 'rs' portion of an instruction
-    .rs(DUT.CPU.DP.MW_o.rs),
+    .rs(DUT.CPU.DP.cpu_tracker_rs),
     // The 'rt' portion of an instruction
-    .rt(DUT.CPU.DP.MW_o.rt),
+    .rt(DUT.CPU.DP.cpu_tracker_rt),
     // The final wsel
-    .wsel(DUT.CPU.DP.MW_o.wsel),
+    .wsel(DUT.CPU.DP.mem_wb_out.regtbw),
     // The 32 bit instruction
-    .instr(DUT.CPU.DP.MW_o.instr),
+    .instr(DUT.CPU.DP.mem_wb_out.imemload),
     // Connect the PC to this
-    .pc(DUT.CPU.DP.MW_o.pc),
+    .pc(DUT.CPU.DP.cpc),
     // Connect the next PC value (the next registered value) here
-    .next_pc_val(DUT.CPU.DP.MW_o.next_pc_val),
+    .next_pc_val(DUT.CPU.DP.npc),
     // The final imm/shamt signals
     // This means it should already be extended 
-    .imm(DUT.CPU.DP.MW_o.imm_shamt_final),
-    .shamt(DUT.CPU.DP.MW_o.imm_shamt_final),
+    .imm(DUT.CPU.DP.mem_wb_out.imm32),
+    .shamt('0),
     // the value for lui BEFORE being being shifted
-     .lui_pre_shift(DUT.CPU.DP.MW_o.lui_pre_shift),
+     .lui_pre_shift(DUT.CPU.DP.mem_wb_out.lui_ext[31:16]),
     // The branch target (aka offset added to npc)
-    .branch_addr(DUT.CPU.DP.MW_o.baddr),
+    .branch_addr(DUT.CPU.DP.mem_wb_out.baddr),
     // Port O of the ALU from the M/W register
-    .dat_addr(DUT.CPU.DP.MW_o.portO),
+    .dat_addr(DUT.CPU.DP.mem_wb_out.alu_out),
     // The value that was stored in memory during MEM stage
-    .store_dat(DUT.CPU.DP.MW_o.rdat2),
+    .store_dat(DUT.CPU.DP.mem_wb_out.rdat2),
     // The value selected to be written into register during WB stage
-    .reg_dat(DUT.CPU.DP.MW_o.wdat)
+    .reg_dat(DUT.CPU.DP.rfif.wdat)
   );
   
 `else
