@@ -53,7 +53,6 @@ package dp_types_pkg;
        regsrc_t regsrc;
        regdst_t regdst;
        word_t imm32;
-       word_t lui_ext; 
        logic regWEN;
        logic dREN, dWEN;
        alusrc_t alusrc;

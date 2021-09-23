@@ -177,7 +177,7 @@ module datapath (
         PCSRC_BEQ: npc = (ex_mem_out.zero) ? ex_mem_out.baddr : ex_mem_out.pc4; 
         PCSRC_BNE: npc = (ex_mem_out.zero) ? ex_mem_out.pc4 : ex_mem_out.baddr;
       default: 
-        mem_wb_in.npc = ex_mem_out.pc4; 
+        npc = ex_mem_out.pc4; 
     endcase
   end
 
@@ -202,6 +202,15 @@ module datapath (
   assign dpif.dmemWEN = ex_mem_out.dWEN;
   assign dpif.dmemaddr = ex_mem_out.alu_out; 
   assign dpif.dmemstore = ex_mem_out.rdat2; 
+
+  always_ff @(posedge CLK, negedge nRST) begin
+    if (~nRST) begin
+      dpif.halt <= 0;
+    end
+    else begin
+      dpif.halt <= mem_wb_out.halt | dpif.halt;
+    end
+  end
 
 
   // cpu tracker signals.
