@@ -83,5 +83,10 @@ package dp_types_pkg;
        word_t imm32;
     } MEM_WB_t;
 
+    // new memory typedef
+    typedef struct packed {
+       word_t dload;
+    } MEM_WB_DATA_t;
+
 endpackage
 `endif
