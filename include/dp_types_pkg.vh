@@ -64,14 +64,11 @@ package dp_types_pkg;
        word_t alu_out, rdat2;
        word_t lui_ext, baddr, jaddr;
        regbits_t regtbw;
-       opcode_t opcode;
-       funct_t funct;
        logic halt;
        regsrc_t regsrc;
        word_t imm32;
        logic regWEN;
        logic dREN, dWEN;
-       pcsrc_t pcsrc;
        logic zero;
     } EX_MEM_t;
 

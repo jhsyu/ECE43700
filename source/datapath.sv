@@ -133,9 +133,8 @@ module datapath (
   assign aluif.port_b = (id_ex_out.alusrc == ALUSRC_REG) ? rfif.rdat2 : imm32; 
 
   // deciding baddr and jaddr. 
-  word_t jaddr, baddr; 
-  assign jaddr = {id_ex_out.pc4[31:28], id_ex_out.imemload[25:0], 2'b0}; 
-  assign baddr = id_ex_out.pc4 + (id_ex_out.imm32 << 2); 
+  assign ex_mem_in.jaddr = {id_ex_out.pc4[31:28], id_ex_out.imemload[25:0], 2'b0}; 
+  assign ex_mem_in.baddr = id_ex_out.pc4 + (id_ex_out.imm32 << 2); 
 
   // lui ext. 
   assign ex_mem_in.lui_ext = (id_ex_out.regsrc == REGSRC_LUI) ? {id_ex_out.imemload[15:0], 16'b0} : word_t'(32'b0); 
@@ -146,8 +145,22 @@ module datapath (
                             (id_ex_out.regdst == REGDST_RA) ? regbits_t'(5'd31) : regbits_t'(5'd0); 
 
   // EX/MEM latch connections. 
+  assign ex_mem_in.imemload = id_ex_out.imemload; 
+  assign ex_mem_in.pc = id_ex_out.pc; 
+  assign ex_mem_in.pc4 = id_ex_out.pc4; 
+  assign ex_mem_in.alu_out = aluif.port_o; 
+  assign ex_mem_in.rdat2 = id_ex_out.rdat2; 
+  assign ex_mem_in.halt = id_ex_out.halt; 
+  assign ex_mem_in.regsrc = id_ex_out.regsrc; 
+  assign ex_mem_in.imm32 = id_ex_out.imm32; 
+  assign ex_mem_in.regWEN = id_ex_out.regWEN; 
+  assign ex_mem_in.dREN = id_ex_out.dREN; 
+  assign ex_mem_in.dWEN = id_ex_out.dWEN; 
+  assign ex_mem_in.zero = aluif.z; 
 
   // PC
+  // TODO: moving pcsrc logic from control unit to here. 
+  
 
   always_comb begin : PC_MUX
     casez (cuif.pcsrc)
