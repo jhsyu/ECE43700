@@ -108,7 +108,8 @@ module datapath (
   assign if_id_in.pc4 = pc4; 
 
   // control unit: 
-  assign cuif.instr = word_t'(if_id_out.imemload); 
+  assign cuif.opcode = opcode_t'(if_id_out.imemload[31:26]); 
+  assign cuif.funct = funct_t'(if_id_out.imemload[5:0]); 
   // EXT unit: 
   word_t imm32; 
   always_comb begin : EXT
@@ -243,10 +244,6 @@ module datapath (
       dpif.halt <= mem_wb_out.halt | dpif.halt; 
     end
   end
-
-  cpu_tracker_if MW_o(); 
-  
-
 
   // register file
   register_file rf(.CLK(CLK), .nRST(nRST), .rfif(rfif)); 

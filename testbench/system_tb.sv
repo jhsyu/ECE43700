@@ -35,7 +35,7 @@ module system_tb;
   // dut
 `ifndef MAPPED
   system                              DUT (CLK,nRST,syif);
-  /*
+  
   // NOTE: All of these signals MUST be passed all the way through
   // to the write back stage and sampled in the WRITEBACK stage.
   // This means more signals that would normally be necessary
@@ -44,11 +44,11 @@ module system_tb;
     // No need to change this
     .CLK(DUT.CPU.DP.CLK),
     // This is the enable signal for the write back stage
-    .wb_enable(DUT.CPU.DP.pipeline_enable),
+    .wb_enable(DUT.CPU.DP.dpif.ihit),
     // The 'funct' portion of an instruction. Must be of funct_t type
-    .funct(DUT.CPU.DP.MW_o.funct),
+    .funct(DUT.CPU.DP.mem_wb_out.imemload[5:0]),
     // The 'opcode' portion of an instruction. Must be of opcode_t type
-    .opcode(DUT.CPU.DP.MW_o.opcode),
+    .opcode(DUT.CPU.DP.mem_wb_out.imemload[31:26]),
     // The 'rs' portion of an instruction
     .rs(DUT.CPU.DP.MW_o.rs),
     // The 'rt' portion of an instruction
@@ -76,7 +76,7 @@ module system_tb;
     // The value selected to be written into register during WB stage
     .reg_dat(DUT.CPU.DP.MW_o.wdat)
   );
-  */
+  
 `else
   system                              DUT (,,,,//for altera debug ports
     CLK,

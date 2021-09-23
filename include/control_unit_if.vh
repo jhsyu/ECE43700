@@ -20,7 +20,7 @@ interface control_unit_if;
     logic zero; 
 
     modport cu (
-        input   zero, opcode, funct,
+        input   opcode, funct,
         output  aluop, halt,
                 regsrc, regdst, regWEN, 
                 extsel, 
@@ -29,7 +29,7 @@ interface control_unit_if;
     ); 
 
     modport tb (
-        output  zero, opcode, funct,
+        output  opcode, funct,
         input   aluop, halt,
                 regsrc, regdst, regWEN, 
                 extsel, 
