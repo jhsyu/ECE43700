@@ -21,12 +21,11 @@ module control_unit (
         cuif.dWEN = 1'b0; 
         cuif.aluop = ALU_SLL; 
         cuif.halt = 1'b0; 
-        cuif.pcsrc = PCSRC_NPC; 
         casez (cuif.opcode)
             RTYPE: begin
                 cuif.regsrc = REGSRC_ALU; 
                 cuif.regdst = REGDST_RD; 
-                cuif.regWEN = cuif.ihit; 
+                cuif.regWEN = 1'b1;
                 cuif.alusrc = ALUSRC_REG; 
                 casez (cuif.funct)
                     SLLV:       cuif.aluop = ALU_SLL; 
@@ -40,8 +39,7 @@ module control_unit (
                     SLT:        cuif.aluop = ALU_SLT; 
                     SLTU:       cuif.aluop = ALU_SLTU; 
                     JR: begin
-                        cuif.regWEN = 1'b0; 
-                        cuif.pcsrc = PCSRC_REG; 
+                        cuif.regWEN = 1'b0;  
                     end
                     default:    cuif.aluop = ALU_SLL; 
                 endcase
@@ -49,85 +47,80 @@ module control_unit (
             BEQ: begin
                 cuif.extsel = SIGN_EXT; 
                 cuif.aluop = ALU_SUB; 
-                cuif.pcsrc = (cuif.zero) ? PCSRC_IMM : PCSRC_NPC; 
             end
             BNE: begin
                 cuif.extsel = SIGN_EXT; 
                 cuif.aluop = ALU_SUB; 
-                cuif.pcsrc = (cuif.zero) ? PCSRC_NPC : PCSRC_IMM; 
 
             end
             ADDI, ADDIU: begin
                 cuif.regdst = REGDST_RT; 
-                cuif.regWEN = cuif.ihit; 
+                cuif.regWEN = 1'b1;
                 cuif.alusrc = ALUSRC_IMM; 
                 cuif.extsel = SIGN_EXT;
                 cuif.aluop = ALU_ADD; 
             end 
             SLTI: begin
                 cuif.regdst = REGDST_RT; 
-                cuif.regWEN = cuif.ihit; 
+                cuif.regWEN = 1'b1; 
                 cuif.alusrc = ALUSRC_IMM; 
                 cuif.extsel = SIGN_EXT;
                 cuif.aluop = ALU_SLT; 
             end  
             SLTIU: begin
                 cuif.regdst = REGDST_RT; 
-                cuif.regWEN = cuif.ihit; 
+                cuif.regWEN = 1'b1; 
                 cuif.alusrc = ALUSRC_IMM; 
                 cuif.extsel = SIGN_EXT;
                 cuif.aluop = ALU_SLTU; 
             end
             ANDI: begin
                 cuif.regdst = REGDST_RT; 
-                cuif.regWEN = cuif.ihit; 
+                cuif.regWEN = 1'b1; 
                 cuif.alusrc = ALUSRC_IMM; 
                 cuif.aluop = ALU_AND; 
             end
             ORI: begin
                 cuif.regdst = REGDST_RT; 
-                cuif.regWEN = cuif.ihit; 
+                cuif.regWEN = 1'b1; 
                 cuif.alusrc = ALUSRC_IMM; 
                 cuif.aluop = ALU_OR; 
             end
             XORI: begin
                 cuif.regdst = REGDST_RT; 
-                cuif.regWEN = cuif.ihit; 
+                cuif.regWEN = 1'b1; 
                 cuif.alusrc = ALUSRC_IMM; 
                 cuif.aluop = ALU_XOR; 
             end 
             LUI: begin
                 cuif.regdst = REGDST_RT; 
-                cuif.regWEN = cuif.ihit; 
+                cuif.regWEN = 1'b1; 
                 cuif.regsrc = REGSRC_LUI; 
             end
             LW: begin
                 cuif.regsrc = REGSRC_MEM; 
                 cuif.regdst = REGDST_RT; 
-                cuif.regWEN = cuif.dhit; 
+                cuif.regWEN = 1'b1; // dhit 
                 cuif.alusrc = ALUSRC_IMM; 
                 cuif.extsel = SIGN_EXT;
-                cuif.dREN = cuif.ihit; 
+                cuif.dREN = 1'b1;   // ihit 
                 cuif.aluop = ALU_ADD; 
             end
             SW: begin
                 cuif.alusrc = ALUSRC_IMM; 
                 cuif.extsel = SIGN_EXT;
-                cuif.dWEN = cuif.ihit; 
+                cuif.dWEN = 1'b1; 
                 cuif.aluop = ALU_ADD; 
             end
-            J: begin
-                cuif.pcsrc = PCSRC_JAL; 
-            end
+            //J: begin // no changes necessary
+            //end
             JAL: begin
                 cuif.regsrc = REGSRC_NPC; 
                 cuif.regdst = REGDST_RA; 
-                cuif.regWEN = cuif.ihit; 
-                cuif.pcsrc = PCSRC_JAL;
+                cuif.regWEN = 1'b1; 
             end
             HALT: begin
                 cuif.halt = 1'b1; 
-                cuif.pcsrc = PCSRC_CPC; 
             end
             default: begin
                 cuif.regsrc = REGSRC_ALU; 
