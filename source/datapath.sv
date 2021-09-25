@@ -94,7 +94,8 @@ module datapath (
   // IF/ID pipeline register connections. 
   assign if_id_in.imemload = (dpif.ihit) ? dpif.imemload : word_t'(0); 
   assign if_id_in.pc = cpc; 
-  assign if_id_in.pc4 = pc4; 
+  assign if_id_in.pc4 = pc4;
+  assign if_id_in.npc = npc; 
 
   // control unit: 
   assign cuif.opcode = opcode_t'(if_id_out.imemload[31:26]); 
@@ -139,7 +140,8 @@ module datapath (
   assign id_ex_in.dWEN = cuif.dWEN; 
   assign id_ex_in.alusrc = cuif.alusrc; 
   assign id_ex_in.aluop = cuif.aluop;
-  assign id_ex_in.pcsrc = cuif.pcsrc;  
+  assign id_ex_in.pcsrc = cuif.pcsrc; 
+  assign id_ex_in.npc = if_id_out.npc;  
 
   // EX stage. 
   // ALU input. 
@@ -173,7 +175,8 @@ module datapath (
   assign ex_mem_in.dREN = id_ex_out.dREN; 
   assign ex_mem_in.dWEN = id_ex_out.dWEN; 
   assign ex_mem_in.zero = aluif.z; 
-  assign ex_mem_in.pcsrc = id_ex_out.pcsrc; 
+  assign ex_mem_in.pcsrc = id_ex_out.pcsrc;
+  assign ex_mem_in.npc = id_ex_out.npc; 
 
   // PC
 
@@ -199,11 +202,11 @@ module datapath (
   assign mem_wb_in.regsrc = ex_mem_out.regsrc; 
   assign mem_wb_in.regWEN = ex_mem_out.regWEN; 
   assign mem_wb_in.imm32 = ex_mem_out.imm32; 
-
   assign mem_wb_in.baddr = ex_mem_out.baddr; 
   assign mem_wb_in.rdat2 = ex_mem_out.rdat2; 
   assign mem_wb_in.pc4 = ex_mem_out.pc4; 
-  assign mem_wb_in.pc = ex_mem_out.pc; 
+  assign mem_wb_in.pc = ex_mem_out.pc;
+  assign mem_wb_in.npc = ex_mem_out.npc; 
 
   // datapath cache interface connections. 
 

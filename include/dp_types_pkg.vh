@@ -40,13 +40,13 @@ package dp_types_pkg;
 
     typedef struct packed {
        word_t imemload;
-       word_t pc, pc4;
+       word_t pc, pc4, npc;
     } IF_ID_t;
    
     typedef struct packed {
        word_t imemload;
        pcsrc_t pcsrc; 
-       word_t pc, pc4;
+       word_t pc, pc4, npc;
        word_t rdat1, rdat2;
        regbits_t rt, rd;
        logic halt;
@@ -62,7 +62,7 @@ package dp_types_pkg;
     typedef struct packed {
        word_t imemload;
        pcsrc_t pcsrc; 
-       word_t pc, pc4;
+       word_t pc, pc4, npc;
        word_t alu_out, rdat1, rdat2;
        word_t lui_ext, baddr, jaddr;
        regbits_t regtbw;
@@ -75,7 +75,7 @@ package dp_types_pkg;
     } EX_MEM_t;
 
     typedef struct packed {
-       word_t pc, pc4; 
+       word_t pc, pc4, npc; 
        word_t imemload;
        word_t dload, alu_out;
        word_t lui_ext;

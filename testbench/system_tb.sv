@@ -58,7 +58,7 @@ module system_tb;
     // Connect the PC to this
     .pc(DUT.CPU.DP.mem_wb_out.pc),
     // Connect the next PC value (the next registered value) here
-    .next_pc_val(DUT.CPU.DP.mem_wb_out.pc4),
+    .next_pc_val(DUT.CPU.DP.mem_wb_out.npc),
     // The final imm/shamt signals
     // This means it should already be extended 
     .imm(DUT.CPU.DP.mem_wb_out.imm32),
