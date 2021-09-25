@@ -75,7 +75,7 @@ package dp_types_pkg;
     } EX_MEM_t;
 
     typedef struct packed {
-        word_t pc, pc4; 
+       word_t pc, pc4; 
        word_t imemload;
        word_t dload, alu_out;
        word_t lui_ext;
@@ -87,11 +87,6 @@ package dp_types_pkg;
        // signals for cpu tracker. 
        word_t baddr, rdat2; 
     } MEM_WB_t;
-
-    // new memory typedef
-    typedef struct packed {
-       word_t dload;
-    } MEM_WB_DATA_t;
 
 endpackage
 `endif

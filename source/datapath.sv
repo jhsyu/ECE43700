@@ -47,22 +47,22 @@ module datapath (
       mem_wb_out <= '0; 
     end
     else if (stall) begin
-	    if_id_out <= if_id_out; 
-	    id_ex_out <= id_ex_out;
+      if_id_out <= if_id_out; 
+      id_ex_out <= id_ex_out;
       ex_mem_out <= ex_mem_out; 
-	    mem_wb_out <= mem_wb_out;
+      mem_wb_out <= mem_wb_out;
     end
     else if (dpif.ihit | dpif.dhit) begin
       if_id_out <= if_id_in; 
-	    id_ex_out <= id_ex_in;
+      id_ex_out <= id_ex_in;
       ex_mem_out <= ex_mem_in; 
-	    mem_wb_out <= mem_wb_in;
+      mem_wb_out <= mem_wb_in;
     end
     else begin
-	    if_id_out <= if_id_out; 
-	    id_ex_out <= id_ex_out;
+      if_id_out <= if_id_out; 
+      id_ex_out <= id_ex_out;
       ex_mem_out <= ex_mem_out; 
-	    mem_wb_out <= mem_wb_out;
+      mem_wb_out <= mem_wb_out;
     end
   end
    
