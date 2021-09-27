@@ -30,7 +30,7 @@ interface cache_control_if(
   import cpu_types_pkg::*;
 
   // access with cpuid on each processor
-  parameter CPUS = 2;
+  parameter CPUS = 1;
 
   // arbitration
   logic   [CPUS-1:0]       iwait, dwait, iREN, dREN, dWEN;
@@ -76,14 +76,14 @@ interface cache_control_if(
       daddr[0] = cif0.daddr;
       ccwrite[0] = cif0.ccwrite;
       cctrans[0] = cif0.cctrans;
-      iREN[1] = cif1.iREN;
-      dREN[1] = cif1.dREN;
-      dWEN[1] = cif1.dWEN;
-      dstore[1] = cif1.dstore;
-      iaddr[1] = cif1.iaddr;
-      daddr[1] = cif1.daddr;
-      ccwrite[1] = cif1.ccwrite;
-      cctrans[1] = cif1.cctrans;
+      //iREN[1] = cif1.iREN;
+      //dREN[1] = cif1.dREN;
+      //dWEN[1] = cif1.dWEN;
+      //dstore[1] = cif1.dstore;
+      //iaddr[1] = cif1.iaddr;
+      //daddr[1] = cif1.daddr;
+      //ccwrite[1] = cif1.ccwrite;
+      //cctrans[1] = cif1.cctrans;
 
       cif0.iwait = iwait[0];
       cif0.dwait = dwait[0];
@@ -92,13 +92,13 @@ interface cache_control_if(
       cif0.ccwait = ccwait[0];
       cif0.ccinv = ccinv[0];
       cif0.ccsnoopaddr = ccsnoopaddr[0];
-      cif1.iwait = iwait[1];
-      cif1.dwait = dwait[1];
-      cif1.iload = iload[1];
-      cif1.dload = dload[1];
-      cif1.ccwait = ccwait[1];
-      cif1.ccinv = ccinv[1];
-      cif1.ccsnoopaddr = ccsnoopaddr[1];
+      //cif1.iwait = iwait[1];
+      //cif1.dwait = dwait[1];
+      //cif1.iload = iload[1];
+      //cif1.dload = dload[1];
+      //cif1.ccwait = ccwait[1];
+      //cif1.ccinv = ccinv[1];
+      //cif1.ccsnoopaddr = ccsnoopaddr[1];
     end
     else begin
       iREN = cif0.iREN;

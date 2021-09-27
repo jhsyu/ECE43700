@@ -41,37 +41,92 @@ module datapath (
   logic [1:0] forwardB;
 
   // stall signals
-  logic stall;
-  logic IF_ID_stall;
-  logic ID_EX_stall;
-  logic EX_MEM_stall;
-  logic MEM_WB_stall;
+  logic stall, flush;
+  logic IF_ID_stall, IF_ID_flush;
+  logic ID_EX_stall, ID_EX_flush;
+  logic EX_MEM_stall, EX_MEM_flush;
+  logic MEM_WB_stall, MEM_WB_flush;
+
+  assign flush = 1'b0;
+  assign IF_ID_flush  = 1'b0;
+  assign ID_EX_flush  = 1'b0;
+  assign EX_MEM_flush = 1'b0;
+  assign MEM_WB_flush = 1'b0;
+  assign IF_ID_stall  = 1'b0;
+  assign ID_EX_stall  = 1'b0;
+  assign EX_MEM_stall = 1'b0;
+  assign MEM_WB_stall = 1'b0;
 
   // pipeline latches
   always_ff @(posedge CLK, negedge nRST) begin
     if (~nRST) begin
-      if_id_out <= '0; 
-      id_ex_out <= '0; 
-      ex_mem_out <= '0; 
-      mem_wb_out <= '0; 
+       if_id_out <= '0; 
     end
-    else if (stall) begin
-      if_id_out <= if_id_out; 
-      id_ex_out <= id_ex_out;
-      ex_mem_out <= ex_mem_out; 
-      mem_wb_out <= mem_wb_out;
+    else if (stall | IF_ID_stall) begin
+       if_id_out <= if_id_out; 
+    end
+    else if (flush | IF_ID_flush) begin
+       if_id_out <= '0; 
     end
     else if (dpif.ihit | dpif.dhit) begin
-      if_id_out <= if_id_in; 
-      id_ex_out <= id_ex_in;
-      ex_mem_out <= ex_mem_in; 
-      mem_wb_out <= mem_wb_in;
+       if_id_out <= if_id_in; 
     end
     else begin
-      if_id_out <= if_id_out; 
-      id_ex_out <= id_ex_out;
-      ex_mem_out <= ex_mem_out; 
-      mem_wb_out <= mem_wb_out;
+       if_id_out <= if_id_out; 
+    end
+  end
+
+  always_ff @(posedge CLK, negedge nRST) begin
+    if (~nRST) begin
+       id_ex_out <= '0; 
+    end
+    else if (stall | ID_EX_stall) begin
+       id_ex_out <= id_ex_out; 
+    end
+    else if (flush | ID_EX_flush) begin
+       id_ex_out <= '0; 
+    end
+    else if (dpif.ihit | dpif.dhit) begin
+       id_ex_out <= id_ex_in; 
+    end
+    else begin
+       id_ex_out <= id_ex_out; 
+    end
+  end
+
+  always_ff @(posedge CLK, negedge nRST) begin
+    if (~nRST) begin
+       ex_mem_out <= '0; 
+    end
+    else if (stall | EX_MEM_stall) begin
+       ex_mem_out <= ex_mem_out; 
+    end
+    else if (flush | EX_MEM_flush) begin
+       ex_mem_out <= '0; 
+    end
+    else if (dpif.ihit | dpif.dhit) begin
+       ex_mem_out <= ex_mem_in; 
+    end
+    else begin
+       ex_mem_out <= ex_mem_out; 
+    end
+  end
+
+  always_ff @(posedge CLK, negedge nRST) begin
+    if (~nRST) begin
+       mem_wb_out <= '0; 
+    end
+    else if (stall | MEM_WB_stall) begin
+       mem_wb_out <= mem_wb_out; 
+    end
+    else if (flush | MEM_WB_flush) begin
+       mem_wb_out <= '0; 
+    end
+    else if (dpif.ihit | dpif.dhit) begin
+       mem_wb_out <= mem_wb_in; 
+    end
+    else begin
+       mem_wb_out <= mem_wb_out; 
     end
   end
    
@@ -242,7 +297,6 @@ module datapath (
     end
   end
 
-
   // cpu tracker signals.
   opcode_t cpu_tracker_opcode;
   assign cpu_tracker_opcode = opcode_t'(mem_wb_out.imemload[31:26]);  
@@ -259,24 +313,17 @@ module datapath (
     forwardA = '0;
     forwardB = '0;
     if (mem_wb_out.regWEN & (mem_wb_out.regtbw != '0) & (mem_wb_out.regtbw == regbits_t'(id_ex_out.imemload[25:21]))) begin
-      //if (mem_wb_out.regtbw == regbits_t'(ex_mem_out.imemload[25:21])) begin
-	forwardA = 2'b01;
+      forwardA = 2'b01;
     end
     if (mem_wb_out.regWEN & (mem_wb_out.regtbw != '0) & (mem_wb_out.regtbw == regbits_t'(id_ex_out.imemload[20:16]))) begin
-      //else if (mem_wb_out.regtbw == regbits_t'(ex_mem_out.imemload[20:16])) begin
-	forwardB = 2'b01;
-      //end
+      forwardB = 2'b01;
     end
     if (ex_mem_out.regWEN & (ex_mem_out.regtbw != '0) & (ex_mem_out.regtbw == regbits_t'(id_ex_out.imemload[25:21]))) begin
-      //if (ex_mem_out.regtbw == regbits_t'(id_ex_out.imemload[25:21])) begin
-        forwardA = 2'b10;
+      forwardA = 2'b10;
     end
     if (ex_mem_out.regWEN & (ex_mem_out.regtbw != '0) & (ex_mem_out.regtbw == regbits_t'(id_ex_out.imemload[20:16]))) begin
-      //else if (ex_mem_out.regtbw == regbits_t'(id_ex_out.imemload[20:16])) begin
-         forwardB = 2'b10;
+      forwardB = 2'b10;
     end
-    //end
-    
   end
 
 
