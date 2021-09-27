@@ -36,9 +36,18 @@ module datapath (
   EX_MEM_t ex_mem_in, ex_mem_out;
   MEM_WB_t mem_wb_in, mem_wb_out;
 
-  // pipeline latches
+  // forwarding signals
+  logic [1:0] forwardA;
+  logic [1:0] forwardB;
+
+  // stall signals
   logic stall;
-  
+  logic IF_ID_stall;
+  logic ID_EX_stall;
+  logic EX_MEM_stall;
+  logic MEM_WB_stall;
+
+  // pipeline latches
   always_ff @(posedge CLK, negedge nRST) begin
     if (~nRST) begin
       if_id_out <= '0; 
@@ -234,7 +243,30 @@ module datapath (
   assign cpu_tracker_rs = regbits_t'(mem_wb_out.imemload[25:21]);
   assign cpu_tracker_rt = regbits_t'(mem_wb_out.imemload[20:16]);
   logic wb_enable; 
-  assign wb_enable = ~stall & (dpif.ihit | dpif.dhit); 
+  assign wb_enable = ~stall & (dpif.ihit | dpif.dhit);
+
+  // forwarding unit
+  // 
+  always_comb begin: FWD // Rs = [25:21] and Rt = [20:16] and Rd = [15:11]
+    forwardA = '0;
+    forwardB = '0;
+    if (ex_mem_out.regWEN & (ex_mem_out.imemload[15:11] != '0)) begin
+      if (ex_mem_out.imemload[15:11] == id_ex_out.imemload[25:21]) begin
+        forwardA = 2'b10;
+      end
+      else if (ex_mem_out.imemload[15:11] == id_ex_out.imemload[20:16]) begin
+	forwardB = 2'b10;
+      end
+    end
+    else if (mem_wb_out.regWEN & (mem_wb_out.imemload[15:11] != '0)) begin
+      if (mem_wb_out.imemload[15:11] == ex_mem_out.imemload[25:21]) begin
+	forwardA = 2'b01;
+      end
+      else if (mem_wb_out.imemload[15:11] == ex_mem_out.imemload[20:16]) begin
+	forwardB = 2'b10;
+      end
+    end
+  end
 
 
   // register file
