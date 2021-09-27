@@ -27,9 +27,9 @@ module datapath (
 
   // interfaces
   register_file_if rfif(); 
-  alu_if aluif(); 
-  control_unit_if cuif(); 
-  request_unit_if ruif(); 
+  alu_if           aluif(); 
+  control_unit_if  cuif(); 
+  request_unit_if  ruif(); 
 
   IF_ID_t  if_id_in, if_id_out;
   ID_EX_t  id_ex_in, id_ex_out; 
@@ -325,7 +325,6 @@ module datapath (
       forwardB = 2'b10;
     end
   end
-
 
   // register file
   register_file rf(.CLK(CLK), .nRST(nRST), .rfif(rfif)); 
