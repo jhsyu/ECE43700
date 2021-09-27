@@ -63,7 +63,7 @@ package dp_types_pkg;
        word_t imemload;
        pcsrc_t pcsrc; 
        word_t pc, pc4, npc;
-       word_t alu_out, rdat1, rdat2;
+       word_t alu_out, rdat1, rdat2, rdat2_fwd;
        word_t lui_ext, baddr, jaddr;
        regbits_t regtbw;
        logic halt;

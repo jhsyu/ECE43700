@@ -79,7 +79,7 @@ module datapath (
   // IF (Instruction Fetch): PC update. 
   logic halt, pcen; 
   assign halt = opcode_t'(dpif.imemload[31:26]) == HALT; 
-  assign stall = (opcode_t'((ex_mem_out.imemload[31:26]) == LW) | (ex_mem_out.imemload[31:26] == SW) && ~dpif.dhit); 
+  assign stall = ((opcode_t' ( ex_mem_out.imemload[31:26]) == LW) | (opcode_t'(ex_mem_out.imemload[31:26]) == SW) && ~dpif.dhit); 
   assign pcen = ~halt & ~stall & dpif.ihit; 
 
   parameter PC_INIT = 0;
@@ -124,14 +124,22 @@ module datapath (
     end
   end
 
+  word_t mem_wb_wdat, rdat1_fwd, rdat2_fwd;
+  assign mem_wb_wdat = (mem_wb_out.regsrc == REGSRC_ALU) ? mem_wb_out.alu_out : 
+                       (mem_wb_out.regsrc == REGSRC_MEM) ? mem_wb_out.dload: 
+                       (mem_wb_out.regsrc == REGSRC_LUI) ? mem_wb_out.lui_ext: mem_wb_out.pc4;
+  assign rdat1_fwd = (forwardA == 2'b10) ? ex_mem_out.alu_out : 
+		     (forwardA == 2'b01) ? mem_wb_wdat : id_ex_out.rdat1;
+  assign rdat2_fwd = (forwardB == 2'b10) ? ex_mem_out.alu_out : 
+		     (forwardB == 2'b01) ? mem_wb_wdat : id_ex_out.rdat2;
+   
   // register file connections. 
   assign rfif.WEN = mem_wb_out.regWEN; 
   assign rfif.wsel =  mem_wb_out.regtbw; 
   assign rfif.rsel1 = regbits_t'(if_id_out.imemload[25:21]); 
   assign rfif.rsel2 = regbits_t'(if_id_out.imemload[20:16]); 
-  assign rfif.wdat = (mem_wb_out.regsrc == REGSRC_ALU) ? mem_wb_out.alu_out : 
-                     (mem_wb_out.regsrc == REGSRC_MEM) ? mem_wb_out.dload: 
-                     (mem_wb_out.regsrc == REGSRC_LUI) ? mem_wb_out.lui_ext: mem_wb_out.pc4; 
+  assign rfif.wdat = mem_wb_wdat;
+
   // ID/EX Connections. 
   assign id_ex_in.imemload = if_id_out.imemload; 
   assign id_ex_in.pc = if_id_out.pc; 
@@ -155,8 +163,8 @@ module datapath (
   // EX stage. 
   // ALU input. 
   assign aluif.aluop = id_ex_out.aluop;  
-  assign aluif.port_a = id_ex_out.rdat1; 
-  assign aluif.port_b = (id_ex_out.alusrc == ALUSRC_REG) ? id_ex_out.rdat2 : id_ex_out.imm32; 
+  assign aluif.port_a = rdat1_fwd; 
+  assign aluif.port_b = (id_ex_out.alusrc == ALUSRC_REG) ? rdat2_fwd : id_ex_out.imm32; 
 
   // deciding baddr and jaddr. 
   assign ex_mem_in.jaddr = {id_ex_out.pc4[31:28], id_ex_out.imemload[25:0], 2'b0}; 
@@ -185,7 +193,8 @@ module datapath (
   assign ex_mem_in.dWEN = id_ex_out.dWEN; 
   assign ex_mem_in.zero = aluif.z; 
   assign ex_mem_in.pcsrc = id_ex_out.pcsrc;
-  assign ex_mem_in.npc = id_ex_out.npc; 
+  assign ex_mem_in.npc = id_ex_out.npc;
+  assign ex_mem_in.rdat2_fwd = rdat2_fwd;
 
   // PC
 
@@ -222,7 +231,7 @@ module datapath (
   assign dpif.dmemREN = ex_mem_out.dREN;
   assign dpif.dmemWEN = ex_mem_out.dWEN;
   assign dpif.dmemaddr = ex_mem_out.alu_out; 
-  assign dpif.dmemstore = ex_mem_out.rdat2; 
+  assign dpif.dmemstore = ex_mem_out.rdat2_fwd;
 
   always_ff @(posedge CLK, negedge nRST) begin
     if (~nRST) begin
@@ -246,26 +255,28 @@ module datapath (
   assign wb_enable = ~stall & (dpif.ihit | dpif.dhit);
 
   // forwarding unit
-  // 
   always_comb begin: FWD // Rs = [25:21] and Rt = [20:16] and Rd = [15:11]
     forwardA = '0;
     forwardB = '0;
-    if (ex_mem_out.regWEN & (ex_mem_out.imemload[15:11] != '0)) begin
-      if (ex_mem_out.imemload[15:11] == id_ex_out.imemload[25:21]) begin
-        forwardA = 2'b10;
-      end
-      else if (ex_mem_out.imemload[15:11] == id_ex_out.imemload[20:16]) begin
-	forwardB = 2'b10;
-      end
-    end
-    else if (mem_wb_out.regWEN & (mem_wb_out.imemload[15:11] != '0)) begin
-      if (mem_wb_out.imemload[15:11] == ex_mem_out.imemload[25:21]) begin
+    if (mem_wb_out.regWEN & (mem_wb_out.regtbw != '0) & (mem_wb_out.regtbw == regbits_t'(id_ex_out.imemload[25:21]))) begin
+      //if (mem_wb_out.regtbw == regbits_t'(ex_mem_out.imemload[25:21])) begin
 	forwardA = 2'b01;
-      end
-      else if (mem_wb_out.imemload[15:11] == ex_mem_out.imemload[20:16]) begin
-	forwardB = 2'b10;
-      end
     end
+    if (mem_wb_out.regWEN & (mem_wb_out.regtbw != '0) & (mem_wb_out.regtbw == regbits_t'(id_ex_out.imemload[20:16]))) begin
+      //else if (mem_wb_out.regtbw == regbits_t'(ex_mem_out.imemload[20:16])) begin
+	forwardB = 2'b01;
+      //end
+    end
+    if (ex_mem_out.regWEN & (ex_mem_out.regtbw != '0) & (ex_mem_out.regtbw == regbits_t'(id_ex_out.imemload[25:21]))) begin
+      //if (ex_mem_out.regtbw == regbits_t'(id_ex_out.imemload[25:21])) begin
+        forwardA = 2'b10;
+    end
+    if (ex_mem_out.regWEN & (ex_mem_out.regtbw != '0) & (ex_mem_out.regtbw == regbits_t'(id_ex_out.imemload[20:16]))) begin
+      //else if (ex_mem_out.regtbw == regbits_t'(id_ex_out.imemload[20:16])) begin
+         forwardB = 2'b10;
+    end
+    //end
+    
   end
 
 
