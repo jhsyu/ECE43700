@@ -41,7 +41,7 @@ package dp_types_pkg;
     typedef struct packed {
        word_t imemload;
        word_t pc, pc4, npc;
-    } IF_ID_t;
+	} if_id_t;
    
     typedef struct packed {
        word_t imemload;
@@ -57,7 +57,7 @@ package dp_types_pkg;
        logic dREN, dWEN;
        alusrc_t alusrc;
        aluop_t aluop;
-    } ID_EX_t;
+	} id_ex_t;
 
     typedef struct packed {
        word_t imemload;
@@ -72,7 +72,7 @@ package dp_types_pkg;
        logic regWEN;
        logic dREN, dWEN;
        logic zero;
-    } EX_MEM_t;
+	} ex_mem_t;
 
     typedef struct packed {
        word_t pc, pc4, npc; 
@@ -86,7 +86,7 @@ package dp_types_pkg;
        word_t imm32;
        // signals for cpu tracker. 
        word_t baddr, rdat2; 
-    } MEM_WB_t;
+	} mem_wb_t;
 
 endpackage
 `endif

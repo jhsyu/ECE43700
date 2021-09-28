@@ -12,3 +12,10 @@ README
 .deps
 *.hex
 *.ver
+
+# Work directory files
+*.qdb
+*.qpg
+*.qtl
+_info
+_vmake
