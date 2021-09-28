@@ -11,25 +11,26 @@ import dp_types_pkg::*;
 interface hazard_unit_if;
     // input of hazard unit, bypassing hazards. 
     logic dhit, ihit, halt, ex_regWEN, mem_regWEN;
-    regbits_t id_rs, id_rt, mem_rd, wb_rd; 
+    regbits_t id_rs, id_rt, ex_rd, mem_rd; 
 
 
     // input of hazard unit, branch prediction. 
     logic zero; 
-    pcsrc_t mem_pc_src;
+    pcsrc_t mem_pcsrc;
 
 
     // output of hazard unit. 
-    logic en[3:0], flush[3:0];  // en[3] and flush[3] for if/id. respectively. 
+    logic if_id_en, id_ex_en, ex_mem_en, mem_wb_en; 
+    logic if_id_flush, id_ex_flush, ex_mem_flush, mem_wb_flush; 
     logic pcen; 
 
-    // intermediate signals. 
-    logic phit;                 // indicating if prediction is correct. 
-    modport harzard_unit (
+    modport hu (
         input   dhit, ihit, halt, ex_regWEN, mem_regWEN, 
-                id_rs, id_rt, mem_rd, wb_rd, 
-                zero, mem_pc_src, 
-        output  en, flush, pcen
+                id_rs, id_rt, ex_rd, mem_rd,  
+                zero, mem_pcsrc, 
+        output  pcen, 
+                if_id_en, id_ex_en, ex_mem_en, mem_wb_en, 
+                if_id_flush, id_ex_flush, ex_mem_flush, mem_wb_flush
     ); 
 endinterface
 

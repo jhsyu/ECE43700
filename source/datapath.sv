@@ -13,6 +13,7 @@
 `include "control_unit_if.vh"
 `include "request_unit_if.vh"
 `include "pipeline_reg_if.vh"
+`include "hazard_unit_if.vh"
 `include "forwarding_if.vh"
 // alu op, mips op, and instruction type
 `include "cpu_types_pkg.vh"
@@ -33,6 +34,7 @@ module datapath (
   control_unit_if  cuif(); 
   request_unit_if  ruif(); 
   pipeline_reg_if  rif();
+  hazard_unit_if   huif(); 
   forwarding_if    fwif();
 
   // pipeline latches. 
@@ -50,19 +52,9 @@ module datapath (
 
   // stall signals
   logic stall;
-  assign rif.if_id_en = ~stall & (dpif.dhit | dpif.ihit); 
-  assign rif.id_ex_en = ~stall & (dpif.dhit | dpif.ihit); 
-  assign rif.ex_mem_en = ~stall & (dpif.dhit | dpif.ihit); 
-  assign rif.mem_wb_en = ~stall & (dpif.dhit | dpif.ihit); 
-  assign rif.if_id_flush = 1'b0; 
-  assign rif.id_ex_flush = 1'b0; 
-  assign rif.ex_mem_flush = 1'b0; 
-  assign rif.mem_wb_flush = 1'b0; 
   // IF (Instruction Fetch): PC update. 
-  logic halt, pcen; 
+  logic halt; 
   assign halt = opcode_t'(dpif.imemload[31:26]) == HALT; 
-  assign stall = ((opcode_t' ( rif.ex_mem_out.imemload[31:26]) == LW) | (opcode_t'(rif.ex_mem_out.imemload[31:26]) == SW) && ~dpif.dhit); 
-  assign pcen = ~halt & ~stall & dpif.ihit; 
 
   parameter PC_INIT = 0;
   word_t cpc, npc, pc4; 
@@ -71,7 +63,7 @@ module datapath (
     if (~nRST) begin
       cpc <= PC_INIT; 
     end
-    else if (pcen) begin
+    else if (huif.pcen) begin
       cpc <= npc; 
     end
     else begin
@@ -235,6 +227,28 @@ module datapath (
   logic wb_enable; 
   assign wb_enable = ~stall & (dpif.ihit | dpif.dhit);
 
+  // hazard unit interface connections. 
+  assign huif.dhit = dpif.dhit; 
+  assign huif.ihit = huif.ihit; 
+  assign huif.halt = halt; 
+  assign huif.ex_regWEN = rif.id_ex_out.regWEN; 
+  assign huif.mem_regWEN = rif.ex_mem_out.regWEN; 
+  assign huif.id_rs = rfif.rsel1; 
+  assign huif.id_rt = rfif.rsel2; 
+  assign huif.ex_rd = rif.ex_mem_in.regtbw; 
+  assign huif.mem_rd = rif.ex_mem_out.regtbw; 
+  assign huif.zero = rif.ex_mem_out.zero; 
+  assign huif.mem_pcsrc = rif.ex_mem_out.pcsrc; 
+  assign rif.if_id_en = huif.if_id_en; 
+  assign rif.id_ex_en = huif.id_ex_en; 
+  assign rif.ex_mem_en = huif.ex_mem_en; 
+  assign rif.mem_wb_en = huif.mem_wb_en; 
+  assign rif.if_id_flush = huif.if_id_flush; 
+  assign rif.id_ex_flush = huif.id_ex_flush; 
+  assign rif.ex_mem_flush = huif.ex_mem_flush; 
+  assign rif.mem_wb_flush = huif.mem_wb_flush; 
+
+
   // forwarding unit interface connections
   assign fwif.mem_wb_regWEN = rif.mem_wb_out.regWEN;
   assign fwif.ex_mem_regWEN = rif.ex_mem_out.regWEN;
@@ -272,5 +286,7 @@ module datapath (
   control_unit cu (cuif); 
   // request unit. 
   request_unit ru (.CLK(CLK), .nRST(nRST), .ruif(ruif)); 
+  // hazard unit. 
+  hazard_unit hu (.huif(huif)); 
 
 endmodule
