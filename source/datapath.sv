@@ -13,6 +13,7 @@
 `include "control_unit_if.vh"
 `include "request_unit_if.vh"
 `include "pipeline_reg_if.vh"
+`include "forwarding_if.vh"
 // alu op, mips op, and instruction type
 `include "cpu_types_pkg.vh"
 `include "dp_types_pkg.vh"
@@ -31,18 +32,21 @@ module datapath (
   alu_if           aluif(); 
   control_unit_if  cuif(); 
   request_unit_if  ruif(); 
-  pipeline_reg_if  rif(); 
+  pipeline_reg_if  rif();
+  forwarding_if    fwif();
 
   // pipeline latches. 
   if_id_reg if_id (.CLK(CLK), .nRST(nRST), .rif(rif)); 
   id_ex_reg id_ex (.CLK(CLK), .nRST(nRST), .rif(rif)); 
   ex_mem_reg ex_mem (.CLK(CLK), .nRST(nRST), .rif(rif)); 
   mem_wb_reg mem_wb (.CLK(CLK), .nRST(nRST), .rif(rif)); 
-  
 
   // forwarding signals
   logic [1:0] forwardA;
   logic [1:0] forwardB;
+
+  // forwarding unit.
+  forwarding fwding (.fwif(fwif));
 
   // stall signals
   logic stall;
@@ -231,6 +235,16 @@ module datapath (
   logic wb_enable; 
   assign wb_enable = ~stall & (dpif.ihit | dpif.dhit);
 
+  // forwarding unit interface connections
+  assign fwif.mem_wb_regWEN = rif.mem_wb_out.regWEN;
+  assign fwif.ex_mem_regWEN = rif.ex_mem_out.regWEN;
+  assign fwif.mem_wb_regtbw = rif.mem_wb_out.regtbw;
+  assign fwif.ex_mem_regtbw = rif.ex_mem_out.regtbw;
+  assign fwif.rs = regbits_t'(rif.id_ex_out.imemload[25:21]);
+  assign fwif.rt = regbits_t'(rif.id_ex_out.imemload[20:16]);
+  assign forwardA = fwif.forwardA;
+  assign forwardB = fwif.forwardB; 
+   /*
   // forwarding unit
   always_comb begin: FWD // Rs = [25:21] and Rt = [20:16] and Rd = [15:11]
     forwardA = '0;
@@ -248,14 +262,15 @@ module datapath (
       forwardB = 2'b10;
     end
   end
+    */
 
-  // register file
+  // register file.
   register_file rf(.CLK(CLK), .nRST(nRST), .rfif(rfif)); 
   // alu. 
   alu alu0 (.aluif(aluif)); 
   // control unit. 
   control_unit cu (cuif); 
-  // request unit 
+  // request unit. 
   request_unit ru (.CLK(CLK), .nRST(nRST), .ruif(ruif)); 
 
 endmodule
