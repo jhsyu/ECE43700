@@ -23,18 +23,20 @@ module hazard_unit (
         // deal with data hazard. 
         if (huif.ex_regWEN && huif.ex_rd != regbits_t'(0) &&
            (huif.ex_rd == huif.id_rs || huif.ex_rd == huif.id_rt)) begin
-            huif.if_id_flush = 1'b1;    // flush if/id. insert nop here.
+            huif.id_ex_flush = 1'b1; 
+            huif.if_id_en = 1'b0; 
             huif.pcen = 1'b0;        // stall the increment of pcen. 
         end
         else if (huif.mem_regWEN && huif.mem_rd != regbits_t'(0) &&
                 (huif.mem_rd == huif.id_rs || huif.mem_rd == huif.id_rt)) begin
-            huif.if_id_flush = 1'b1;    // flush if/id. insert nop here.
+            huif.id_ex_flush = 1'b1;    //  insert nop here.
+            huif.if_id_en = 1'b0; 
             huif.pcen = 1'b0;        // stall the increment of pcen. 
         end
         // deal with branch mis-predictions.
         casez(huif.mem_pcsrc) 
-            PCSRC_BEQ: phit = (huif.zero) ? 1'b1 : 1'b0; 
-            PCSRC_BNE: phit = (huif.zero) ? 1'b0 : 1'b1;
+            PCSRC_BEQ: phit = (huif.zero) ? 1'b0 : 1'b1; 
+            PCSRC_BNE: phit = (huif.zero) ? 1'b1 : 1'b0;
             PCSRC_JAL: phit = 1'b0; 
             PCSRC_REG: phit = 1'b0; 
             default: phit = 1'b1;

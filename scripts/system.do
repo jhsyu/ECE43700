@@ -57,8 +57,6 @@ add wave -noupdate -expand -group RegFile /system_tb/DUT/CPU/DP/rfif/wdat
 add wave -noupdate -expand -group RegFile /system_tb/DUT/CPU/DP/rf/reg_curr
 add wave -noupdate -expand -group RegFile -radix unsigned /system_tb/DUT/CPU/DP/rfif/rsel2
 add wave -noupdate -expand -group RegFile -radix unsigned /system_tb/DUT/CPU/DP/rfif/rsel1
-add wave -noupdate -expand -group {Hazard Unit} /system_tb/DUT/CPU/DP/huif/dhit
-add wave -noupdate -expand -group {Hazard Unit} /system_tb/DUT/CPU/DP/huif/ihit
 add wave -noupdate -expand -group {Hazard Unit} /system_tb/DUT/CPU/DP/hu/phit
 add wave -noupdate -expand -group {Hazard Unit} /system_tb/DUT/CPU/DP/huif/halt
 add wave -noupdate -expand -group {Hazard Unit} /system_tb/DUT/CPU/DP/huif/ex_regWEN
@@ -97,13 +95,13 @@ add wave -noupdate -expand -group EX /system_tb/DUT/CPU/DP/rif/id_ex_out.rt
 add wave -noupdate -expand -group EX /system_tb/DUT/CPU/DP/rif/ex_mem_in.regtbw
 add wave -noupdate -expand -group EX /system_tb/DUT/CPU/DP/rif/ex_mem_in.zero
 add wave -noupdate -expand -group EX /system_tb/DUT/CPU/DP/rif/ex_mem_in.regWEN
-add wave -noupdate -expand -group MEM /system_tb/DUT/CPU/DP/rif/mem_wb_in.imemload
 add wave -noupdate -expand -group MEM /system_tb/DUT/CPU/DP/rif/ex_mem_out.pcsrc
-add wave -noupdate -expand -group MEM /system_tb/DUT/CPU/DP/rif/ex_mem_out.pc
-add wave -noupdate -expand -group MEM /system_tb/DUT/CPU/DP/rif/mem_wb_in.npc
-add wave -noupdate -expand -group MEM /system_tb/DUT/CPU/DP/rif/ex_mem_out.jaddr
+add wave -noupdate -expand -group MEM /system_tb/DUT/CPU/DP/npc
+add wave -noupdate -expand -group MEM /system_tb/DUT/CPU/DP/rif/mem_wb_out.baddr
 add wave -noupdate -expand -group MEM /system_tb/DUT/CPU/DP/rif/ex_mem_out.regtbw
 add wave -noupdate -expand -group MEM /system_tb/DUT/CPU/DP/rif/ex_mem_out.regWEN
+add wave -noupdate -expand -group MEM /system_tb/DUT/CPU/DP/rif/mem_wb_in.npc
+add wave -noupdate -expand -group MEM /system_tb/DUT/CPU/DP/rif/ex_mem_out.imemload
 add wave -noupdate -expand -group WB /system_tb/DUT/CPU/DP/rif/mem_wb_out.pc
 add wave -noupdate -expand -group WB /system_tb/DUT/CPU/DP/rif/mem_wb_out.imemload
 add wave -noupdate -expand -group WB /system_tb/DUT/CPU/DP/rfif/WEN
@@ -111,7 +109,7 @@ add wave -noupdate -expand -group WB -radix unsigned /system_tb/DUT/CPU/DP/rfif/
 add wave -noupdate -expand -group WB /system_tb/DUT/CPU/DP/rfif/wdat
 add wave -noupdate -expand -group WB /system_tb/DUT/CPU/DP/rf/reg_curr
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {224572 ps} 0}
+WaveRestoreCursors {{Cursor 1} {220973 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 184
 configure wave -valuecolwidth 100
@@ -127,4 +125,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {32758 ps} {360413 ps}
+WaveRestoreZoom {32760 ps} {360415 ps}

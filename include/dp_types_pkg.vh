@@ -16,7 +16,8 @@ package dp_types_pkg;
     typedef enum logic [1:0] {
         REGDST_RD = 2'h0, 
         REGDST_RT = 2'h1, 
-        REGDST_RA = 2'h2           // for JAL. 
+        REGDST_RA = 2'h2,          // for JAL. 
+        REGDST_R0 = 2'h3
     } regdst_t; 
 
     typedef enum logic {
