@@ -53,9 +53,8 @@ module datapath (
   // stall signals
   logic stall;
   // IF (Instruction Fetch): PC update. 
-  logic halt; 
+  logic halt, pcen; 
   assign halt = opcode_t'(dpif.imemload[31:26]) == HALT; 
-
   parameter PC_INIT = 0;
   word_t cpc, npc, pc4; 
   assign pc4 = cpc + 4; 
@@ -229,7 +228,7 @@ module datapath (
 
   // hazard unit interface connections. 
   assign huif.dhit = dpif.dhit; 
-  assign huif.ihit = huif.ihit; 
+  assign huif.ihit = dpif.ihit; 
   assign huif.halt = halt; 
   assign huif.ex_regWEN = rif.id_ex_out.regWEN; 
   assign huif.mem_regWEN = rif.ex_mem_out.regWEN; 

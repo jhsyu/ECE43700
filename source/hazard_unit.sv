@@ -19,7 +19,7 @@ module hazard_unit (
         huif.id_ex_flush = 1'b0; 
         huif.ex_mem_flush = 1'b0; 
         huif.mem_wb_flush = 1'b0; 
-        huif.pcen = 1'b1; 
+        huif.pcen = huif.ihit; 
         // deal with data hazard. 
         if (huif.ex_regWEN && huif.ex_rd != regbits_t'(0) &&
            (huif.ex_rd == huif.id_rs || huif.ex_rd == huif.id_rt)) begin
@@ -41,7 +41,7 @@ module hazard_unit (
         endcase
 
         if (~phit) begin    // misprediction
-            huif.pcen = 1'b1;
+            huif.pcen = huif.ihit;
             huif.if_id_flush = 1'b1; 
             huif.id_ex_flush = 1'b1; 
         end
