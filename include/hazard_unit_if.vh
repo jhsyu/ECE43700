@@ -32,6 +32,14 @@ interface hazard_unit_if;
                 if_id_en, id_ex_en, ex_mem_en, mem_wb_en, 
                 if_id_flush, id_ex_flush, ex_mem_flush, mem_wb_flush
     ); 
+    modport tb (
+        output  dhit, ihit, halt, ex_regWEN, mem_regWEN, 
+                id_rs, id_rt, ex_rd, mem_rd,  
+                zero, mem_pcsrc, 
+        input   pcen, 
+                if_id_en, id_ex_en, ex_mem_en, mem_wb_en, 
+                if_id_flush, id_ex_flush, ex_mem_flush, mem_wb_flush
+    ); 
 endinterface
 
 `endif
