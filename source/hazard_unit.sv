@@ -44,6 +44,7 @@ module hazard_unit (
             huif.pcen = huif.ihit;
             huif.if_id_flush = 1'b1; 
             huif.id_ex_flush = 1'b1; 
+            huif.ex_mem_flush = 1'b1; 
         end
         if (huif.halt) begin
             huif.pcen = 1'b0; 

@@ -118,7 +118,7 @@ module control_unit (
             end
             //J: begin // no changes necessary
             //end
-            JAL: begin
+            JAL,J: begin
                 cuif.regsrc = REGSRC_NPC; 
                 cuif.regdst = REGDST_RA; 
                 cuif.regWEN = 1'b1; 

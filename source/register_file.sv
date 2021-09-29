@@ -26,7 +26,6 @@ module register_file(
 		end
 	end
 	logic test_probe; 
-	assign test_probe = ~nRST && rfif.WEN && |rfif.wsel; 
 	assign rfif.rdat1 = reg_curr[rfif.rsel1];
 	assign rfif.rdat2 = reg_curr[rfif.rsel2]; 
 	

@@ -1,7 +1,6 @@
 /*
   Eric Villasenor
   evillase@gmail.com
-
   datapath contains register file, control, hazard,
   muxes, and glue logic for processor
 */
@@ -229,7 +228,7 @@ module datapath (
   // hazard unit interface connections. 
   assign huif.dhit = dpif.dhit; 
   assign huif.ihit = dpif.ihit; 
-  assign huif.halt = halt; 
+  assign huif.halt = rif.mem_wb_out.halt; 
   assign huif.ex_regWEN = rif.id_ex_out.regWEN; 
   assign huif.mem_regWEN = rif.ex_mem_out.regWEN; 
   assign huif.id_rs = rfif.rsel1; 
