@@ -237,7 +237,7 @@ module datapath (
   assign huif.mem_rd = rif.ex_mem_out.regtbw; 
   assign huif.zero = rif.ex_mem_out.zero; 
   assign huif.mem_pcsrc = rif.ex_mem_out.pcsrc; 
-  assign rif.if_id_en = huif.if_id_en; 
+  assign rif.if_id_en = huif.if_id_en & (dpif.ihit | dpif.dhit); 
   assign rif.id_ex_en = huif.id_ex_en; 
   assign rif.ex_mem_en = huif.ex_mem_en; 
   assign rif.mem_wb_en = huif.mem_wb_en; 
@@ -256,25 +256,6 @@ module datapath (
   assign fwif.rt = regbits_t'(rif.id_ex_out.imemload[20:16]);
   assign forwardA = fwif.forwardA;
   assign forwardB = fwif.forwardB; 
-   /*
-  // forwarding unit
-  always_comb begin: FWD // Rs = [25:21] and Rt = [20:16] and Rd = [15:11]
-    forwardA = '0;
-    forwardB = '0;
-    if (rif.mem_wb_out.regWEN & (rif.mem_wb_out.regtbw != '0) & (rif.mem_wb_out.regtbw == regbits_t'(rif.id_ex_out.imemload[25:21]))) begin
-      forwardA = 2'b01;
-    end
-    if (rif.mem_wb_out.regWEN & (rif.mem_wb_out.regtbw != '0) & (rif.mem_wb_out.regtbw == regbits_t'(rif.id_ex_out.imemload[20:16]))) begin
-      forwardB = 2'b01;
-    end
-    if (rif.ex_mem_out.regWEN & (rif.ex_mem_out.regtbw != '0) & (rif.ex_mem_out.regtbw == regbits_t'(rif.id_ex_out.imemload[25:21]))) begin
-      forwardA = 2'b10;
-    end
-    if (rif.ex_mem_out.regWEN & (rif.ex_mem_out.regtbw != '0) & (rif.ex_mem_out.regtbw == regbits_t'(rif.id_ex_out.imemload[20:16]))) begin
-      forwardB = 2'b10;
-    end
-  end
-    */
 
   // register file.
   register_file rf(.CLK(CLK), .nRST(nRST), .rfif(rfif)); 

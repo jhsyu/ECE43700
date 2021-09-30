@@ -11,27 +11,30 @@ module hazard_unit (
     logic phit; // indicating if the prediction is correct. 
     always_comb begin
         phit = 1'b1; 
-        huif.if_id_en = huif.dhit | huif.ihit; 
-        huif.id_ex_en = huif.dhit | huif.ihit; 
-        huif.ex_mem_en = huif.dhit | huif.ihit; 
-        huif.mem_wb_en = huif.dhit | huif.ihit; 
+        huif.if_id_en = 1'b1; 
+        huif.id_ex_en = 1'b1; 
+        huif.ex_mem_en = 1'b1; 
+        huif.mem_wb_en = 1'b1; 
         huif.if_id_flush = 1'b0; 
         huif.id_ex_flush = 1'b0; 
         huif.ex_mem_flush = 1'b0; 
         huif.mem_wb_flush = 1'b0; 
         huif.pcen = huif.ihit; 
         // deal with data hazard. 
-        if (huif.ex_regWEN && huif.ex_rd != regbits_t'(0) &&
-           (huif.ex_rd == huif.id_rs || huif.ex_rd == huif.id_rt)) begin
-            huif.id_ex_flush = 1'b1; 
-            huif.if_id_en = 1'b0; 
-            huif.pcen = 1'b0;        // stall the increment of pcen. 
-        end
-        else if (huif.mem_regWEN && huif.mem_rd != regbits_t'(0) &&
+        if (huif.memREN) begin
+            if (huif.ex_regWEN && huif.ex_rd != regbits_t'(0) &&
+                (huif.ex_rd == huif.id_rs || huif.ex_rd == huif.id_rt)) begin
+                huif.id_ex_flush = 1'b1; 
+                huif.if_id_en = 1'b0; 
+                huif.pcen = 1'b0;        // stall the increment of pcen. 
+            end
+            else if (huif.mem_regWEN && huif.mem_rd != regbits_t'(0) &&
                 (huif.mem_rd == huif.id_rs || huif.mem_rd == huif.id_rt)) begin
-            huif.id_ex_flush = 1'b1;    //  insert nop here.
-            huif.if_id_en = 1'b0; 
-            huif.pcen = 1'b0;        // stall the increment of pcen. 
+                huif.id_ex_flush = 1'b1;    //  insert nop here.
+                huif.if_id_en = 1'b0; 
+                huif.pcen = 1'b0;        // stall the increment of pcen. 
+            end
+            
         end
         // deal with branch mis-predictions.
         casez(huif.mem_pcsrc) 

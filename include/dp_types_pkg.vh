@@ -89,5 +89,12 @@ package dp_types_pkg;
        word_t baddr, rdat2; 
 	} mem_wb_t;
 
+    typedef enum logic[1:0]{
+        BPRED_NH = 2'b00, 
+        BPRED_NS = 2'b01, 
+        BPRED_TH = 2'b10, 
+        BPRED_TS = 2'b11 
+    } bpred_t; 
+
 endpackage
 `endif
