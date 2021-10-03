@@ -28,7 +28,7 @@ interface hazard_unit_if;
     modport hu (
         input   memREN, halt, ex_regWEN, mem_regWEN, 
                 id_rs, id_rt, ex_rd, mem_rd,  
-                zero, mem_pcsrc, 
+                zero, mem_pcsrc, dhit, ihit, 
         output  pcen, 
                 if_id_en, id_ex_en, ex_mem_en, mem_wb_en, 
                 if_id_flush, id_ex_flush, ex_mem_flush, mem_wb_flush
@@ -36,7 +36,7 @@ interface hazard_unit_if;
     modport tb (
         output  memREN, halt, ex_regWEN, mem_regWEN, 
                 id_rs, id_rt, ex_rd, mem_rd,  
-                zero, mem_pcsrc, 
+                zero, mem_pcsrc, dhit, ihit, 
         input   pcen, 
                 if_id_en, id_ex_en, ex_mem_en, mem_wb_en, 
                 if_id_flush, id_ex_flush, ex_mem_flush, mem_wb_flush
