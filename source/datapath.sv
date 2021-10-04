@@ -245,9 +245,9 @@ module datapath (
   assign huif.mem_pcsrc = rif.ex_mem_out.pcsrc; 
   assign huif.dmemREN = rif.id_ex_out.dREN;
   assign rif.if_id_en = huif.if_id_en & (dpif.ihit | dpif.dhit); 
-  assign rif.id_ex_en = huif.id_ex_en; 
-  assign rif.ex_mem_en = huif.ex_mem_en; 
-  assign rif.mem_wb_en = huif.mem_wb_en; 
+  assign rif.id_ex_en = huif.id_ex_en & (dpif.ihit | dpif.dhit); 
+  assign rif.ex_mem_en = huif.ex_mem_en & (dpif.ihit | dpif.dhit); 
+  assign rif.mem_wb_en = huif.mem_wb_en & (dpif.ihit | dpif.dhit); 
   assign rif.if_id_flush = huif.if_id_flush; 
   assign rif.id_ex_flush = huif.id_ex_flush; 
   assign rif.ex_mem_flush = huif.ex_mem_flush; 
