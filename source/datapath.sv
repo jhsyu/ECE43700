@@ -61,7 +61,7 @@ module datapath (
     if (~nRST) begin
       cpc <= PC_INIT; 
     end
-    else if (huif.pcen) begin
+    else if (huif.pcen && dpif.ihit) begin
       cpc <= npc; 
     end
     else begin
@@ -243,6 +243,7 @@ module datapath (
   assign huif.mem_rd = rif.ex_mem_out.regtbw; 
   assign huif.zero = rif.ex_mem_out.zero; 
   assign huif.mem_pcsrc = rif.ex_mem_out.pcsrc; 
+  assign huif.dmemREN = rif.id_ex_out.dREN;
   assign rif.if_id_en = huif.if_id_en & (dpif.ihit | dpif.dhit); 
   assign rif.id_ex_en = huif.id_ex_en; 
   assign rif.ex_mem_en = huif.ex_mem_en; 
