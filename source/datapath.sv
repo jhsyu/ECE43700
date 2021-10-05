@@ -102,14 +102,10 @@ module datapath (
   assign mem_wb_wdat = (rif.mem_wb_out.regsrc == REGSRC_ALU) ? rif.mem_wb_out.alu_out : 
                        (rif.mem_wb_out.regsrc == REGSRC_MEM) ? rif.mem_wb_out.dload: 
                        (rif.mem_wb_out.regsrc == REGSRC_LUI) ? rif.mem_wb_out.lui_ext: rif.mem_wb_out.pc4;
-  assign rdat1_fwd = (forwardA == 2'b10) ? ex_mem_wdat : 
+  assign rdat1_fwd = (forwardA == 2'b10) ? ex_mem_wdat : // instead of just alu_out
 		     (forwardA == 2'b01) ? mem_wb_wdat : rif.id_ex_out.rdat1;
   assign rdat2_fwd = (forwardB == 2'b10) ? ex_mem_wdat : 
 		     (forwardB == 2'b01) ? mem_wb_wdat : rif.id_ex_out.rdat2;
-  //assign rdat1_fwd = (forwardA == 2'b10) ? rif.ex_mem_out.alu_out : 
-		     //(forwardA == 2'b01) ? mem_wb_wdat : rif.id_ex_out.rdat1;
-  //assign rdat2_fwd = (forwardB == 2'b10) ? rif.ex_mem_out.alu_out : 
-		     //(forwardB == 2'b01) ? mem_wb_wdat : rif.id_ex_out.rdat2;
    
   // register file connections. 
   assign rfif.WEN = rif.mem_wb_out.regWEN; 
