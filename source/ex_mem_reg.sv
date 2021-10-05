@@ -13,6 +13,9 @@ module ex_mem_reg (
 		if (~nRST | rif.ex_mem_flush) begin
 			rif.ex_mem_out <= ex_mem_t'(0); 
 		end
+		else if (rif.ex_mem_en & rif.ex_mem_flush) begin
+			rif.ex_mem_out <= ex_mem_t'(0); 
+		end
 		else if (rif.ex_mem_en) begin
 			rif.ex_mem_out <= rif.ex_mem_in; 
 		end

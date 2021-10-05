@@ -10,7 +10,10 @@ module if_id_reg (
 	pipeline_reg_if.if_id_reg rif
 );
 	always_ff @( posedge CLK, negedge nRST) begin
-		if (~nRST | rif.if_id_flush) begin
+		if (~nRST) begin
+			rif.if_id_out <= if_id_t'(0); 
+		end
+		else if (rif.if_id_en && rif.if_id_flush) begin 
 			rif.if_id_out <= if_id_t'(0); 
 		end
 		else if (rif.if_id_en) begin

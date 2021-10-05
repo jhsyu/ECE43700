@@ -11,7 +11,10 @@ module mem_wb_reg (
 	
 );
 	always_ff @( posedge CLK, negedge nRST) begin
-		if (~nRST | rif.mem_wb_flush) begin
+		if (~nRST) begin
+			rif.mem_wb_out <= id_ex_t'(0); 
+		end
+		else if (rif.mem_wb_en && rif.mem_wb_flush) begin
 			rif.mem_wb_out <= id_ex_t'(0); 
 		end
 		else if (rif.mem_wb_en) begin

@@ -9,10 +9,8 @@ module hazard_unit (
     hazard_unit_if.hu huif
 );
     logic phit; // indicating if the prediction is correct. 
-    logic jump; // indicating this is a jump instead of a branch. 
     always_comb begin
         phit = 1'b1; 
-        jump = 1'b0; 
         huif.if_id_en = 1'b1; 
         huif.id_ex_en = 1'b1; 
         huif.ex_mem_en = 1'b1; 
@@ -34,27 +32,16 @@ module hazard_unit (
         casez(huif.mem_pcsrc) 
             PCSRC_BEQ: phit = (huif.zero) ? 1'b0 : 1'b1; 
             PCSRC_BNE: phit = (huif.zero) ? 1'b1 : 1'b0;
-            PCSRC_JAL: begin 
-                phit = 1'b0; 
-                jump = 1'b1; 
-            end
-            PCSRC_REG: begin 
-                phit = 1'b0; 
-                jump = 1'b1; 
-            end
-            default: begin 
-                phit = 1'b1;
-                jump = 1'b0; 
-            end
+            PCSRC_JAL: phit = 1'b0; 
+            PCSRC_REG: phit = 1'b0; 
+            default: phit = 1'b1;
         endcase
 
         if (~phit) begin    // misprediction
             huif.pcen = 1'b1;
             huif.if_id_flush = 1'b1; 
             huif.id_ex_flush = 1'b1; 
-            if (~jump) begin
-                huif.ex_mem_flush = 1'b1; 
-            end
+            huif.ex_mem_flush = 1'b1; 
         end
         if (huif.halt) begin
             huif.pcen = 1'b0; 

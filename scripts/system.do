@@ -36,19 +36,26 @@ add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/dmemWEN
 add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/dmemload
 add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/dmemstore
 add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/dmemaddr
-add wave -noupdate -group ALU /system_tb/DUT/CPU/DP/aluif/aluop
-add wave -noupdate -group ALU /system_tb/DUT/CPU/DP/aluif/port_a
-add wave -noupdate -group ALU /system_tb/DUT/CPU/DP/aluif/port_b
-add wave -noupdate -group ALU /system_tb/DUT/CPU/DP/aluif/port_o
-add wave -noupdate -group ALU /system_tb/DUT/CPU/DP/aluif/n
-add wave -noupdate -group ALU /system_tb/DUT/CPU/DP/aluif/z
-add wave -noupdate -group ALU /system_tb/DUT/CPU/DP/aluif/v
-add wave -noupdate -group ALU /system_tb/DUT/RAM/ramif/ramREN
-add wave -noupdate -group ALU /system_tb/DUT/RAM/ramif/ramWEN
-add wave -noupdate -group ALU /system_tb/DUT/RAM/ramif/ramaddr
-add wave -noupdate -group ALU /system_tb/DUT/RAM/ramif/ramstore
-add wave -noupdate -group ALU /system_tb/DUT/RAM/ramif/ramload
-add wave -noupdate -group ALU /system_tb/DUT/RAM/ramif/ramstate
+add wave -noupdate /system_tb/DUT/CPU/DP/imm32
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/rif/id_ex_out.alusrc
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/forwardA
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/forwardB
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/rif/id_ex_out.rdat2
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/rif/id_ex_out.imm32
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/aluif/aluop
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/aluif/port_a
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/aluif/port_b
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/aluif/port_o
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/aluif/n
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/aluif/z
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/aluif/v
+add wave -noupdate -expand -group ALU /system_tb/DUT/RAM/ramif/ramREN
+add wave -noupdate -expand -group ALU /system_tb/DUT/RAM/ramif/ramWEN
+add wave -noupdate -expand -group ALU /system_tb/DUT/RAM/ramif/ramaddr
+add wave -noupdate -expand -group ALU /system_tb/DUT/RAM/ramif/ramstore
+add wave -noupdate -expand -group ALU /system_tb/DUT/RAM/ramif/ramload
+add wave -noupdate -expand -group ALU /system_tb/DUT/RAM/ramif/ramstate
+add wave -noupdate -expand -group ALU /system_tb/DUT/CPU/DP/rdat1_fwd
 add wave -noupdate -expand -group RegFile /system_tb/DUT/CPU/DP/rfif/rdat1
 add wave -noupdate -expand -group RegFile /system_tb/DUT/CPU/DP/rfif/rdat2
 add wave -noupdate -expand -group RegFile /system_tb/DUT/CPU/DP/rfif/WEN
@@ -108,10 +115,12 @@ add wave -noupdate -expand -group WB /system_tb/DUT/CPU/DP/rif/mem_wb_out.pc
 add wave -noupdate -expand -group WB /system_tb/DUT/CPU/DP/rif/mem_wb_out.imemload
 add wave -noupdate -expand -group WB /system_tb/DUT/CPU/DP/rfif/WEN
 add wave -noupdate -expand -group WB -radix unsigned /system_tb/DUT/CPU/DP/rfif/wsel
+add wave -noupdate -expand -group WB /system_tb/DUT/CPU/DP/rif/mem_wb_out.alu_out
+add wave -noupdate -expand -group WB /system_tb/DUT/CPU/DP/rif/mem_wb_out.regsrc
 add wave -noupdate -expand -group WB /system_tb/DUT/CPU/DP/rfif/wdat
 add wave -noupdate -expand -group WB /system_tb/DUT/CPU/DP/rf/reg_curr
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {381036 ps} 0}
+WaveRestoreCursors {{Cursor 1} {140683 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 184
 configure wave -valuecolwidth 100
@@ -127,4 +136,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {0 ps} {597 ns}
+WaveRestoreZoom {0 ps} {271 ns}
