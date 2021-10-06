@@ -89,12 +89,27 @@ package dp_types_pkg;
        word_t baddr, rdat2; 
 	} mem_wb_t;
 
+    parameter BTAG_W = 22; 
+    parameter BIND_W = 8; 
+    parameter BBYT_W = 2; 
+    
     typedef enum logic[1:0]{
         BPRED_NH = 2'b00, 
         BPRED_NS = 2'b01, 
         BPRED_TH = 2'b10, 
         BPRED_TS = 2'b11 
-    } bpred_t; 
+    } branch_pred_state_t; 
+    
+    typedef struct packed {
+        logic [BTAG_W-1:0] tag; 
+        logic [BIND_W-1:0] ind; 
+        logic [BBYT_W-1:0] offs; // will be always zero.      
+    } branch_pred_instr_t;
+
+    typedef struct packed{
+        branch_pred_state_t state;
+        word_t target;
+    } branch_pred_frame_t; 
 
 endpackage
 `endif
