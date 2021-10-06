@@ -61,11 +61,8 @@ module datapath (
     if (~nRST) begin
       cpc <= PC_INIT; 
     end
-    else if (huif.pcen && dpif.ihit) begin
-      cpc <= npc; 
-    end
     else begin
-      cpc <= cpc; 
+      cpc <= npc; 
     end
   end
     
@@ -173,15 +170,18 @@ module datapath (
   // PC
 
   always_comb begin : PC_MUX
-    casez (rif.ex_mem_out.pcsrc)
-        PCSRC_PC4: npc = pc4;
+    if (huif.pcen && dpif.ihit) begin
+      casez (rif.ex_mem_out.pcsrc)
         PCSRC_REG: npc = rif.ex_mem_out.rdat1; 
         PCSRC_JAL: npc = rif.ex_mem_out.jaddr; 
         PCSRC_BEQ: npc = (rif.ex_mem_out.zero) ? rif.ex_mem_out.baddr : pc4; 
         PCSRC_BNE: npc = (rif.ex_mem_out.zero) ? pc4 : rif.ex_mem_out.baddr;
-      default: 
-        npc = pc4; 
-    endcase
+        default:   npc = pc4; 
+      endcase
+    end
+    else begin
+      npc = cpc; 
+    end
   end
 
   // MEM/WB latch connections. 
@@ -225,7 +225,7 @@ module datapath (
   assign cpu_tracker_rs = regbits_t'(rif.mem_wb_out.imemload[25:21]);
   assign cpu_tracker_rt = regbits_t'(rif.mem_wb_out.imemload[20:16]);
   logic wb_enable; 
-  assign wb_enable = ~stall & (dpif.ihit | dpif.dhit);
+  assign wb_enable = rif.mem_wb_en;
 
   // hazard unit interface connections. 
   assign huif.dhit = dpif.dhit; 

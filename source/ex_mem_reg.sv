@@ -10,7 +10,7 @@ module ex_mem_reg (
 	pipeline_reg_if.ex_mem_reg rif
 );
 	always_ff @( posedge CLK, negedge nRST) begin
-		if (~nRST | rif.ex_mem_flush) begin
+		if (~nRST) begin
 			rif.ex_mem_out <= ex_mem_t'(0); 
 		end
 		else if (rif.ex_mem_en & rif.ex_mem_flush) begin
