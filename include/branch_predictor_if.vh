@@ -8,17 +8,18 @@ interface branch_pred_if;
     import cpu_types_pkg::*; 
     import dp_types_pkg::*; 
 
+    logic phit;
     word_t cpc, pc4, baddr, npc; 
 
     // still need CLK and nRST
     
     modport bp (
         input   phit, pc4, baddr, 
-        output  npc; 
+        output  npc 
     ); 
     modport tb (
         output  phit, pc4, baddr, 
-        input   npc; 
+        input   npc 
     ); 
 endinterface
 `endif 
