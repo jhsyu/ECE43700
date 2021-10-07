@@ -26,7 +26,13 @@ module branch_target_buffer (
     always_comb begin
         next_entry = {BPRED_NS, word_t'(0)}; 
         if (btbif.wen) begin
-            next_entry = btbif.wdat; 
+            next_entry = btbif.wdat;
+            casez(btbif.wdat.state)
+                BPRED_NH: next_entry.state = (btbif.phit) ? BPRED_NS : BPRED_NH; 
+                BPRED_NS: next_entry.state = (btbif.phit) ? BPRED_TS : BPRED_NH;
+                BPRED_TS: next_entry.state = (btbif.phit) ? BPRED_TH : BPRED_NS;
+                BPRED_TH: next_entry.state = (btbif.phit) ? BPRED_TH : BPRED_TS; 
+            endcase
         end
         else begin
             next_entry = buffer[btbif.wsel.ind]; 

@@ -71,6 +71,7 @@ module datapath (
   assign rif.if_id_in.pc = cpc; 
   assign rif.if_id_in.pc4 = pc4;
   assign rif.if_id_in.npc = npc; 
+  assign rif.if_id_in.wstat = btbif.rdat.state; 
 
   // control unit: 
   assign cuif.opcode = opcode_t'(rif.if_id_out.imemload[31:26]); 
@@ -126,7 +127,8 @@ module datapath (
   assign rif.id_ex_in.alusrc = cuif.alusrc; 
   assign rif.id_ex_in.aluop = cuif.aluop;
   assign rif.id_ex_in.pcsrc = cuif.pcsrc; 
-  assign rif.id_ex_in.npc = rif.if_id_out.npc;  
+  assign rif.id_ex_in.npc = rif.if_id_out.npc; 
+  assign rif.id_ex_in.wstat = rif.if_id_out.wstat;  
 
   // EX stage. 
   // ALU input. 
@@ -163,8 +165,20 @@ module datapath (
   assign rif.ex_mem_in.pcsrc = rif.id_ex_out.pcsrc;
   assign rif.ex_mem_in.npc = rif.id_ex_out.npc;
   assign rif.ex_mem_in.rdat2_fwd = rdat2_fwd;
+  assign rif.ex_mem_in.wstat = rif.id_ex_out.wstat; 
 
   // PC
+  // btbif.rdat: {state, target}
+  word_t bpred; 
+  opcode_t if_opcode;
+  // 1. curent instr branch? 
+  // 2. use current instr to read state and target. 
+  // 3. use it as prediction. 
+  assign if_opcode = (dpif.ihit) ? opcode_t'(dpif.imemload[31:26]) : opcode_t'(0); 
+  assign bpred = ((if_opcode == BEQ | if_opcode == BNE) &&
+                  (btbif.rdat.state == BPRED_TH | btbif.rdat.state == BPRED_TS)) ? 
+                  btbif.rdat.target : pc4; 
+              
 
   always_comb begin : PC_MUX
     if (huif.pcen && dpif.ihit) begin
@@ -180,6 +194,7 @@ module datapath (
       npc = cpc; 
     end
   end
+
 
   // MEM/WB latch connections. 
   assign rif.mem_wb_in.imemload = rif.ex_mem_out.imemload; 
@@ -246,7 +261,6 @@ module datapath (
   assign rif.ex_mem_flush = huif.ex_mem_flush; 
   assign rif.mem_wb_flush = huif.mem_wb_flush; 
 
-
   // forwarding unit interface connections
   assign fwif.mem_wb_regWEN = rif.mem_wb_out.regWEN;
   assign fwif.ex_mem_regWEN = rif.ex_mem_out.regWEN;
@@ -260,10 +274,11 @@ module datapath (
   // branch target buffer interface connections. 
   opcode_t mem_opcode; 
   assign mem_opcode = opcode_t'(rif.ex_mem_out.imemload[31:26]); 
+  assign btbif.phit = huif.phit; 
   assign btbif.rsel = branch_pred_instr_t'(dpif.imemload); 
   assign btbif.wsel = branch_pred_instr_t'(rif.ex_mem_out.imemload); 
   assign btbif.wen = mem_opcode == BEQ | mem_opcode == BNE; 
-  assign btbif.wdat = branch_pred_frame_t'({BPRED_TS, rif.ex_mem_out.baddr}); 
+  assign btbif.wdat = branch_pred_frame_t'({rif.ex_mem_out.wstat, rif.ex_mem_out.baddr}); 
 
 
   // register file.

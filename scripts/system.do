@@ -63,7 +63,6 @@ add wave -noupdate -group RegFile /system_tb/DUT/CPU/DP/rfif/wdat
 add wave -noupdate -group RegFile /system_tb/DUT/CPU/DP/rf/reg_curr
 add wave -noupdate -group RegFile -radix unsigned /system_tb/DUT/CPU/DP/rfif/rsel2
 add wave -noupdate -group RegFile -radix unsigned /system_tb/DUT/CPU/DP/rfif/rsel1
-add wave -noupdate -group {Hazard Unit} /system_tb/DUT/CPU/DP/hu/phit
 add wave -noupdate -group {Hazard Unit} /system_tb/DUT/CPU/DP/huif/halt
 add wave -noupdate -group {Hazard Unit} /system_tb/DUT/CPU/DP/huif/ex_regWEN
 add wave -noupdate -group {Hazard Unit} /system_tb/DUT/CPU/DP/huif/mem_regWEN
@@ -118,14 +117,16 @@ add wave -noupdate -group WB /system_tb/DUT/CPU/DP/rif/mem_wb_out.alu_out
 add wave -noupdate -group WB /system_tb/DUT/CPU/DP/rif/mem_wb_out.regsrc
 add wave -noupdate -group WB /system_tb/DUT/CPU/DP/rfif/wdat
 add wave -noupdate -group WB /system_tb/DUT/CPU/DP/rf/reg_curr
-add wave -noupdate /system_tb/DUT/CPU/DP/btbif/rsel
-add wave -noupdate /system_tb/DUT/CPU/DP/btbif/wsel
-add wave -noupdate /system_tb/DUT/CPU/DP/btbif/rdat
-add wave -noupdate /system_tb/DUT/CPU/DP/btbif/wdat
-add wave -noupdate /system_tb/DUT/CPU/DP/btbif/wen
-add wave -noupdate /system_tb/DUT/CPU/DP/mem_opcode
+add wave -noupdate /system_tb/DUT/CPU/DP/if_opcode
+add wave -noupdate /system_tb/DUT/CPU/DP/bpred
+add wave -noupdate -expand -group btb /system_tb/DUT/CPU/DP/btbif/rsel
+add wave -noupdate -expand -group btb /system_tb/DUT/CPU/DP/btbif/wsel
+add wave -noupdate -expand -group btb /system_tb/DUT/CPU/DP/btbif/rdat
+add wave -noupdate -expand -group btb /system_tb/DUT/CPU/DP/btbif/wdat
+add wave -noupdate -expand -group btb /system_tb/DUT/CPU/DP/btbif/wen
+add wave -noupdate -expand -group btb /system_tb/DUT/CPU/DP/mem_opcode
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {863686 ps} 0}
+WaveRestoreCursors {{Cursor 1} {1921621 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 184
 configure wave -valuecolwidth 100
@@ -141,4 +142,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {742550 ps} {1013550 ps}
+WaveRestoreZoom {1836900 ps} {2159900 ps}

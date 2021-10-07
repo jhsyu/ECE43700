@@ -7,10 +7,11 @@ import dp_types_pkg::*;
 
 module hazard_unit (
     hazard_unit_if.hu huif
-);
-    logic phit; // indicating if the prediction is correct. 
+);  
+    logic bpred; 
+
     always_comb begin
-        phit = 1'b1; 
+        huif.phit = 1'b1; 
         huif.if_id_en = 1'b1; 
         huif.id_ex_en = 1'b1; 
         huif.ex_mem_en = 1'b1; 
@@ -29,15 +30,21 @@ module hazard_unit (
             end            
         end
         // deal with branch mis-predictions.
-        casez(huif.mem_pcsrc) 
-            PCSRC_BEQ: phit = (huif.zero) ? 1'b0 : 1'b1; 
-            PCSRC_BNE: phit = (huif.zero) ? 1'b1 : 1'b0;
-            PCSRC_JAL: phit = 1'b0; 
-            PCSRC_REG: phit = 1'b0; 
-            default: phit = 1'b1;
+        casez(huif.bp_stat)
+            BPRED_NH, BPRED_NS: bpred = 1'b0; 
+            BPRED_TH, BPRED_TS: bpred = 1'b1; 
+            default: bpred = 1'b0; 
         endcase
 
-        if (~phit) begin    // misprediction
+        casez(huif.mem_pcsrc) 
+            PCSRC_BEQ: huif.phit = (huif.zero ==  bpred) ? 1'b1 : 1'b0; 
+            PCSRC_BNE: huif.phit = (huif.zero ==  bpred) ? 1'b0 : 1'b1;
+            PCSRC_JAL: huif.phit = 1'b0; 
+            PCSRC_REG: huif.phit = 1'b0; 
+            default: huif.phit = 1'b1;
+        endcase
+
+        if (~huif.phit) begin    // misprediction
             huif.pcen = 1'b1;
             huif.if_id_flush = 1'b1; 
             huif.id_ex_flush = 1'b1; 

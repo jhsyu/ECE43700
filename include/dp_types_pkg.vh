@@ -39,40 +39,65 @@ package dp_types_pkg;
         ALUSRC_IMM = 1'b1          // imm32, ext
     } alusrc_t;
 
+        parameter BTAG_W = 22; 
+    parameter BIND_W = 8; 
+    parameter BBYT_W = 2; 
+    
+    typedef enum logic[1:0]{
+        BPRED_NH = 2'b00, 
+        BPRED_NS = 2'b01, 
+        BPRED_TS = 2'b11, 
+        BPRED_TH = 2'b10
+    } branch_pred_state_t; 
+    
     typedef struct packed {
-       word_t imemload;
-       word_t pc, pc4, npc;
-	} if_id_t;
-   
-    typedef struct packed {
-       word_t imemload;
-       pcsrc_t pcsrc; 
-       word_t pc, pc4, npc;
-       word_t rdat1, rdat2;
-       regbits_t rt, rd;
-       logic halt;
-       regsrc_t regsrc;
-       regdst_t regdst;
-       word_t imm32;
-       logic regWEN;
-       logic dREN, dWEN;
-       alusrc_t alusrc;
-       aluop_t aluop;
-	} id_ex_t;
+        logic [BTAG_W-1:0] tag; 
+        logic [BIND_W-1:0] ind; 
+        logic [BBYT_W-1:0] offs; // will be always zero.      
+    } branch_pred_instr_t;
+
+    typedef struct packed{
+        branch_pred_state_t state;
+        word_t target;
+    } branch_pred_frame_t; 
 
     typedef struct packed {
        word_t imemload;
-       pcsrc_t pcsrc; 
        word_t pc, pc4, npc;
-       word_t alu_out, rdat1, rdat2, rdat2_fwd;
-       word_t lui_ext, baddr, jaddr;
-       regbits_t regtbw;
-       logic halt;
-       regsrc_t regsrc;
-       word_t imm32;
-       logic regWEN;
-       logic dREN, dWEN;
-       logic zero;
+       branch_pred_state_t wstat; 
+	} if_id_t;
+   
+    typedef struct packed {
+        word_t imemload;
+        pcsrc_t pcsrc; 
+        word_t pc, pc4, npc;
+        word_t rdat1, rdat2;
+        regbits_t rt, rd;
+        logic halt;
+        regsrc_t regsrc;
+        regdst_t regdst;
+        word_t imm32;
+        logic regWEN;
+        logic dREN, dWEN;
+        alusrc_t alusrc;
+        aluop_t aluop;
+        branch_pred_state_t wstat; 
+	} id_ex_t;
+
+    typedef struct packed {
+        word_t imemload;
+        pcsrc_t pcsrc; 
+        word_t pc, pc4, npc;
+        word_t alu_out, rdat1, rdat2, rdat2_fwd;
+        word_t lui_ext, baddr, jaddr;
+        regbits_t regtbw;
+        logic halt;
+        regsrc_t regsrc;
+        word_t imm32;
+        logic regWEN;
+        logic dREN, dWEN;
+        logic zero;
+        branch_pred_state_t wstat; 
 	} ex_mem_t;
 
     typedef struct packed {
@@ -89,27 +114,6 @@ package dp_types_pkg;
        word_t baddr, rdat2; 
 	} mem_wb_t;
 
-    parameter BTAG_W = 22; 
-    parameter BIND_W = 8; 
-    parameter BBYT_W = 2; 
-    
-    typedef enum logic[1:0]{
-        BPRED_NH = 2'b00, 
-        BPRED_NS = 2'b01, 
-        BPRED_TH = 2'b10, 
-        BPRED_TS = 2'b11 
-    } branch_pred_state_t; 
-    
-    typedef struct packed {
-        logic [BTAG_W-1:0] tag; 
-        logic [BIND_W-1:0] ind; 
-        logic [BBYT_W-1:0] offs; // will be always zero.      
-    } branch_pred_instr_t;
-
-    typedef struct packed{
-        branch_pred_state_t state;
-        word_t target;
-    } branch_pred_frame_t; 
 
 endpackage
 `endif
