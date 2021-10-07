@@ -25,14 +25,15 @@ program test (
 	initial begin
 		tbif.rsel = branch_pred_frame_t'('hBAD1BAD1); 
 		tbif.wsel = branch_pred_frame_t'('hDEADBEEF); 
-		tbif.wdat = branch_pred_frame_t'({BPRED_NS, word_t'(0)}); 
+		tbif.wdat = branch_pred_frame_t'({BPRED_TS, word_t'('hDEADBEEF)}); 
 		tbif.wen = 1'b0; 
 		nRST = 1'b1; 
 
 		// test 0: Reset.
 		nRST = 1'b0;
 		@(posedge CLK);   
-		@(posedge CLK);   
+		@(posedge CLK);  
+		nRST = 1'b1;  
 
 		// Test case 1: write buffer.
 		@(posedge CLK); 

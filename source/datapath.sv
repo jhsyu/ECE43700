@@ -31,10 +31,10 @@ module datapath (
   register_file_if rfif(); 
   alu_if           aluif(); 
   control_unit_if  cuif(); 
-  request_unit_if  ruif(); 
   pipeline_reg_if  rif();
   hazard_unit_if   huif(); 
   forwarding_if    fwif();
+  branch_target_buffer_if btbif(); 
 
   // pipeline latches. 
   if_id_reg if_id (.CLK(CLK), .nRST(nRST), .rif(rif)); 
@@ -45,9 +45,6 @@ module datapath (
   // forwarding signals
   logic [1:0] forwardA;
   logic [1:0] forwardB;
-
-  // forwarding unit.
-  forwarding fwding (.fwif(fwif));
 
   // stall signals
   logic stall;
@@ -260,15 +257,28 @@ module datapath (
   assign forwardA = fwif.forwardA;
   assign forwardB = fwif.forwardB; 
 
+  // branch target buffer interface connections. 
+  opcode_t mem_opcode; 
+  assign mem_opcode = opcode_t'(rif.ex_mem_out.imemload[31:26]); 
+  assign btbif.rsel = branch_pred_instr_t'(dpif.imemload); 
+  assign btbif.wsel = branch_pred_instr_t'(rif.ex_mem_out.imemload); 
+  assign btbif.wen = mem_opcode == BEQ | mem_opcode == BNE; 
+  assign btbif.wdat = branch_pred_frame_t'({BPRED_TS, rif.ex_mem_out.baddr}); 
+
+
   // register file.
   register_file rf(.CLK(CLK), .nRST(nRST), .rfif(rfif)); 
   // alu. 
   alu alu0 (.aluif(aluif)); 
   // control unit. 
   control_unit cu (cuif); 
-  // request unit. 
-  request_unit ru (.CLK(CLK), .nRST(nRST), .ruif(ruif)); 
   // hazard unit. 
   hazard_unit hu (.huif(huif)); 
+  // forwarding unit.
+  forwarding fwding (.fwif(fwif));
+  // branch target buffer. 
+  branch_target_buffer btb (.CLK(CLK), .nRST(nRST), .btbif(btbif)); 
+
+
 
 endmodule
