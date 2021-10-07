@@ -1,3 +1,4 @@
+
 `include "cpu_types_pkg.vh"
 `include "dp_types_pkg.vh"
 
@@ -14,5 +15,11 @@ interface branch_target_buffer_if;
         input rsel, wsel, wen, wdat, 
         output rdat
     ); 
+
+    modport tb (
+        output rsel, wsel, wen, wdat, 
+        input rdat
+    ); 
+
     
 endinterface
