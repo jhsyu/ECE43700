@@ -185,9 +185,15 @@ module datapath (
       casez (rif.ex_mem_out.pcsrc)
         PCSRC_REG: npc = rif.ex_mem_out.rdat1; 
         PCSRC_JAL: npc = rif.ex_mem_out.jaddr; 
-        PCSRC_BEQ: npc = (rif.ex_mem_out.zero) ? rif.ex_mem_out.baddr : pc4; 
-        PCSRC_BNE: npc = (rif.ex_mem_out.zero) ? pc4 : rif.ex_mem_out.baddr;
-        default:   npc = pc4; 
+        PCSRC_BEQ: begin 
+          npc = (huif.phit) ? bpred : 
+                (rif.ex_mem_out.zero) ? rif.ex_mem_out.baddr : rif.ex_mem_out.pc4; 
+        end
+        PCSRC_BNE: begin 
+          npc = (huif.phit) ? bpred : 
+                (rif.ex_mem_out.zero) ? rif.ex_mem_out.pc4 : rif.ex_mem_out.baddr; 
+        end
+        default:   npc = bpred; 
       endcase
     end
     else begin
@@ -252,6 +258,7 @@ module datapath (
   assign huif.zero = rif.ex_mem_out.zero; 
   assign huif.mem_pcsrc = rif.ex_mem_out.pcsrc; 
   assign huif.dmemREN = rif.id_ex_out.dREN;
+  assign huif.bp_stat = rif.ex_mem_out.wstat; 
   assign rif.if_id_en = huif.if_id_en & (dpif.ihit | dpif.dhit); 
   assign rif.id_ex_en = huif.id_ex_en & (dpif.ihit | dpif.dhit); 
   assign rif.ex_mem_en = huif.ex_mem_en & (dpif.ihit | dpif.dhit); 

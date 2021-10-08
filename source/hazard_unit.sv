@@ -8,7 +8,7 @@ import dp_types_pkg::*;
 module hazard_unit (
     hazard_unit_if.hu huif
 );  
-    logic bpred; 
+    logic predict_taken, branch_taken; 
 
     always_comb begin
         huif.phit = 1'b1; 
@@ -31,14 +31,20 @@ module hazard_unit (
         end
         // deal with branch mis-predictions.
         casez(huif.bp_stat)
-            BPRED_NH, BPRED_NS: bpred = 1'b0; 
-            BPRED_TH, BPRED_TS: bpred = 1'b1; 
-            default: bpred = 1'b0; 
+            BPRED_NH, BPRED_NS: predict_taken = 1'b0; 
+            BPRED_TH, BPRED_TS: predict_taken = 1'b1; 
+            default: predict_taken = 1'b0; 
         endcase
 
         casez(huif.mem_pcsrc) 
-            PCSRC_BEQ: huif.phit = (huif.zero ==  bpred) ? 1'b1 : 1'b0; 
-            PCSRC_BNE: huif.phit = (huif.zero ==  bpred) ? 1'b0 : 1'b1;
+            PCSRC_BEQ: begin
+                branch_taken = (huif.zero) ? 1'b1 : 1'b0; 
+                huif.phit = (branch_taken == predict_taken) ? 1'b1 : 1'b0; 
+            end
+            PCSRC_BNE: begin
+                branch_taken = (huif.zero) ? 1'b0 : 1'b1;
+                huif.phit = (branch_taken == predict_taken) ? 1'b1 : 1'b0; 
+            end
             PCSRC_JAL: huif.phit = 1'b0; 
             PCSRC_REG: huif.phit = 1'b0; 
             default: huif.phit = 1'b1;
