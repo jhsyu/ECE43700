@@ -16,13 +16,13 @@ module icache (
   assign instr_cache_address.tag = icif.imemaddr[31:6];
   assign instr_cache_address.idx = icif.imemaddr[5:2];
   assign instr_cache_address.bytoff = icif.imemaddr[1:0];
-  icache_frame nxt_icache_frame
-  icache_frame [15:0] instr_cache;
+  icache_frame nxt_icache_frame;
+  icache_frame instr_cache [15:0];
 
   always_ff @(posedge CLK, negedge nRST) begin
     if (~nRST) begin
       for (int i = 0; i < 16; i++) begin
-	instr_cache[i] <= {1'b0, 4'b0, word_t'(0)};
+	instr_cache[i] <= {1'b0, 26'b0, word_t'(0)};
       end
     end
     else begin
