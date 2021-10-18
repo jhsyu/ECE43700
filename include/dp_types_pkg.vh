@@ -95,32 +95,6 @@ package dp_types_pkg;
         BPRED_TH = 2'b10, 
         BPRED_TS = 2'b11 
     } bpred_t;
-
-    typedef struct packed { // icache frame
-        logic 	            valid;
-        logic  [ITAG_W-1:0] tag;
-        word_t              data;
-    } icache_frame;
-    
-    typedef struct packed { // icache format struct
-        logic [ITAG_W-1:0] tag; 
-        logic [IIDX_W-1:0] idx;
-        logic [IBYT_W-1:0] bytoff;
-    } icachef_t;
-
-    typedef struct packed { // dcache frame
-        logic 	            valid;
-        logic 	            dirty;
-        logic  [DTAG_W-1:0] tag;
-        word_t [1:0]        data;
-    } dcache_frame;
-
-    typedef struct packed { // dcache format struct
-        logic [DTAG_W-1:0] tag;
-        logic [DIDX_W-1:0] idx;
-        logic [DBLK_W-1:0] blkoff;
-        logic [DBYT_W-1:0] bytoff;
-    } dcachef_t;
    
 
 endpackage
