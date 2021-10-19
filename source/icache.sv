@@ -33,22 +33,34 @@ module icache (
   end
 
   always_comb begin
-    if ( (instr_cache[instr_cache_address.idx].tag == instr_cache_address.tag) && (instr_cache[instr_cache_address].valid) ) begin
-      cif.iaddr = word_t'(0);
-      cif.iREN = 1'b0;
-      ihit = 1'b1;
-      nxt_icache_frame = instr_cache[instr_cache_address.idx]; 
-    end
-    else begin
-      cif.iaddr = icif.imemaddr;
-      cif.iREN = 1'b1;
-      ihit = 1'b0;
-      if (cif.iwait == 1'b0) begin
-	nxt_icache_frame = {1'b1, instr_cache[instr_cache_address.idx].tag, cif.iload};
+    if (icif.imemREN == 1'b1) begin
+      if ( (instr_cache[instr_cache_address.idx].tag == instr_cache_address.tag) && (instr_cache[instr_cache_address].valid) ) begin
+        cif.iaddr = word_t'(0);
+        cif.iREN = 1'b0;
+        ihit = 1'b1;
+        nxt_icache_frame = instr_cache[instr_cache_address.idx];
+        icif.imemload = instr_cache[instr_cache_address].data;
       end
       else begin
-	nxt_icache_frame = instr_cache[instr_cache_address.idx]; 
+        cif.iaddr = icif.imemaddr;
+        cif.iREN = 1'b1;
+        ihit = 1'b0;
+        if (cif.iwait == 1'b0) begin
+  	  nxt_icache_frame = {1'b1, instr_cache[instr_cache_address.idx].tag, cif.iload};
+	  icif.imemload = cif.iload;
+        end
+        else begin
+	  nxt_icache_frame = instr_cache[instr_cache_address.idx];
+	  icif.imemload = word_t'(0);
+        end
       end
+    end
+    else begin
+      cif.iaddr = word_t'(0);
+      cif.iREN = 1'b0;
+      ihit = 1'b0;
+      nxt_icache_frame = instr_cache[instr_cache_address.idx];
+      icif.imemload = word_t'(0);
     end
   end
   
