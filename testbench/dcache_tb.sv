@@ -161,10 +161,10 @@ program test;
 
         // HALT check all frames invalid; dirty frames write back
         test_case_num ++; 
-        test_case_info = "halt"; 
+        test_case_info = "testcase 6: halt and writeback"; 
         dcache_tb.dcif.halt = 1;
         dcache_tb.cif.dwait = 0;
-        #(PERIOD * 16);
+        #(PERIOD * 32);
 
         //Write back hit counter
         #(PERIOD * 2);
