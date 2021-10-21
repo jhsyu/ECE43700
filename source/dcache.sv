@@ -51,20 +51,20 @@ module dcache(
     // initialization, load from memory, update lru_id. 
     always_ff @(posedge CLK or negedge nRST) begin
         if (~nRST) begin
-            set <= '{dcache_line_t'(0)}; 
+            set <= '0; 
         end
         else if (dcif.dhit & dcif.dmemREN) begin
             // update the lru_id upon a dhit
             set[daddr.idx].lru_id = hit_frame; 
         end
         // load 1st word. 
-        else if (dstat == ALLOC0 && ~cif.dwait) begin
+        else if (ds == ALLOC0 && ~cif.dwait) begin
             // if the current state is ALLOC0, and dload is ready. 
             set[daddr.idx].frame[evict_id].data[0]    <= cif.dload; 
             set[daddr.idx].frame[evict_id].tag        <= daddr.tag;         
         end
         // load second word. 
-        else if (dstat == ALLOC1 && ~cif.dwait) begin
+        else if (ds == ALLOC1 && ~cif.dwait) begin
             // also sets dirty, valid. 
             set[daddr.idx].frame[evict_id].data[1]    <= cif.dload; 
             set[daddr.idx].frame[evict_id].dirty      <= 1'b0; 
@@ -75,6 +75,7 @@ module dcache(
         if (~nRST) begin
             ds          <= IDLE; 
             dump_idx    <= '0; 
+        end
         else begin 
             ds          <= nds;
             dump_idx    <= nxt_dump_idx; 
@@ -82,19 +83,20 @@ module dcache(
     end
     // next state and output logic. 
     always_comb begin
-            dcif.flushed = 1'b0;
-            cif.dREN = 1'b0; 
-            cif.dWEN = 1'b1; 
-            cif.daddr = word_t'(0); 
-            cif.dstore = word_t'(0); 
-            nxt_dump_idx = dump_idx; 
-            nds = ds; 
-        casez(ds):
+        dcif.flushed = 1'b0;
+        cif.dREN = 1'b0; 
+        cif.dWEN = 1'b1; 
+        cif.daddr = word_t'(0); 
+        cif.dstore = word_t'(0); 
+        nxt_dump_idx = dump_idx; 
+        nds = ds; 
+        casez(ds)
             IDLE: begin
                 if(dcif.halt) nds = DUMP; 
                 else if ((dcif.dmemREN || dcif.dmemWEN) && ~dcif.dhit) begin
                     nds = (set[daddr.idx].frame[evict_id].dirty) ? WB0 : ALLOC0; 
                 end
+            end
             ALLOC0: begin
                 cif.dREN = 1'b1; 
                 cif.daddr = {daddr[31:3], 3'b000}; 
@@ -104,6 +106,7 @@ module dcache(
                 cif.dREN = 1'b1; 
                 cif.daddr = {daddr[31:3], 3'b100}; 
                 nds = (cif.dwait) ? ALLOC1 : IDLE; 
+            end
             WB0: begin
                 cif.dWEN = 1'b1; 
                 cif.daddr = {set[daddr.idx].frame[evict_id].tag, daddr.idx, 3'b000}; 
@@ -129,7 +132,6 @@ module dcache(
                 cif.dstore = hit_count; 
                 nds = (cif.dwait) ? COUNT : CLEAN; 
             end
-
             CLEAN: begin
                 dcif.flushed = 1'b1; 
                 nds = CLEAN; 

@@ -12,7 +12,7 @@ package caches_types_pkg;
 
     typedef struct packed {
         logic lru_id; 
-        dcache_frame [1:0] frame, 
+        dcache_frame [1:0] frame; 
     } dcache_line_t;
 
 endpackage
