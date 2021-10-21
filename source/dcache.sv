@@ -53,6 +53,11 @@ module dcache(
         if (~nRST) begin
             set <= '0; 
         end
+        else if (dcif.dhit & dcif.dmemWEN) begin
+            set[daddr.idx].lru_id = hit_frame; 
+            set[daddr.idx].frame[hit_frame].data[daddr.blkoff] <= dcif.dmemstore; 
+            set[daddr.idx].frame[hit_frame].dirty <= 1'b1; 
+        end
         else if (dcif.dhit & dcif.dmemREN) begin
             // update the lru_id upon a dhit
             set[daddr.idx].lru_id = hit_frame; 
@@ -85,7 +90,7 @@ module dcache(
     always_comb begin
         dcif.flushed = 1'b0;
         cif.dREN = 1'b0; 
-        cif.dWEN = 1'b1; 
+        cif.dWEN = 1'b0; 
         cif.daddr = word_t'(0); 
         cif.dstore = word_t'(0); 
         nxt_dump_idx = dump_idx; 

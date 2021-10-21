@@ -30,11 +30,6 @@ program test;
     string test_case_info = "NULL"; 
     parameter PERIOD = 10;
     
-    task check_dhit(input logic expected_dhit);
-        #(1); 
-        assert (dcif.dhit == expected_dhit) $display("testcase %0d pass", test_case_num); 
-            else $display("testcase %0d: incorrect dhit", test_case_num);
-    endtask
     task reset_DUT;
         dcache_tb.nRST = 1;
         dcache_tb.dcif.halt = 0;
@@ -62,16 +57,16 @@ program test;
         @(negedge dcache_tb.clk); 
         dcache_tb.dcif.dmemREN = 1;
         dcache_tb.dcif.dmemaddr = {26'h80, 3'h0, 1'b0, 2'b00};
-        check_dhit(1'b0); 
         wait(dcache_tb.cif.dREN | dcache_tb.cif.dWEN);
         @(negedge dcache_tb.clk); 
         dcache_tb.cif.dwait = 0;
         dcache_tb.cif.dload = 32'h1;
         @(negedge dcache_tb.clk); 
-        dcache_tb.dcif.dmemaddr = {26'h80, 3'h0, 1'b1, 2'b00};
         dcache_tb.cif.dwait = 0;
         dcache_tb.cif.dload = 32'h2;
-        #(PERIOD);
+        wait(dcache_tb.dcif.dhit); 
+        assert (dcif.dmemload == 32'h1)
+            else $display("wrong dmemload in testcase %0d", test_case_num);
 
         //load from 0x81, HIT
         test_case_num ++; 
@@ -79,7 +74,12 @@ program test;
         @(negedge dcache_tb.clk); 
         dcache_tb.dcif.dmemREN = 1;
         dcache_tb.dcif.dmemaddr = {26'h80, 3'h0, 1'b1, 2'b00};
-        check_dhit(1'b1); 
+        #(PERIOD);
+        wait(dcache_tb.dcif.dhit); 
+        assert (dcif.dmemload == 32'h2)
+            else $display("wrong dmemload in testcase %0d", test_case_num);
+
+
 
         //save to 0x80, HIT. 
         test_case_info = "testcase 3: writing to cache"; 
@@ -90,8 +90,16 @@ program test;
         dcache_tb.dcif.dmemWEN = 1;
         dcache_tb.dcif.dmemaddr = {26'h80, 3'h0, 1'b0, 2'b00};
         dcache_tb.dcif.dmemstore = 32'h3;
-        check_dhit(1'b1);
+        // check REN/WEN signals to RAM CTRL
         #(PERIOD);
+
+        @(negedge dcache_tb.clk); 
+        dcache_tb.dcif.dmemREN = 1;
+        dcache_tb.dcif.dmemaddr = {26'h80, 3'h0, 1'b0, 2'b00};
+        wait(dcache_tb.dcif.dhit); 
+        assert (dcif.dmemload == 32'h3)
+            else $display("wrong dmemload in testcase %0d", test_case_num);
+
 
         // load from 0x180, MISS
         test_case_num ++; 
@@ -100,7 +108,6 @@ program test;
         dcache_tb.dcif.dmemWEN = 0;
         dcache_tb.dcif.dmemREN = 1;
         dcache_tb.dcif.dmemaddr = {26'h180, 3'h0, 1'b0, 2'b00};
-        check_dhit(1'b0); 
 
         wait(dcache_tb.cif.dREN | dcache_tb.cif.dWEN);
         @(negedge dcache_tb.clk); 
@@ -109,21 +116,21 @@ program test;
         
         wait(dcache_tb.cif.dREN | dcache_tb.cif.dWEN);
         @(negedge dcache_tb.clk); 
-        dcache_tb.dcif.dmemaddr = {26'h180, 3'h0, 1'b1, 2'b00};
         dcache_tb.cif.dwait = 0;
         dcache_tb.cif.dload = 32'h5;
         
+        wait(dcache_tb.dcif.dhit); 
+        assert (dcif.dmemload == 32'h4)
+            else $display("wrong dmemload in testcase %0d", test_case_num);
         #(PERIOD);
-
 
         // load from 0x280, MISS / check replacement wirte back
         test_case_num ++; 
-        test_case_info = "testcase 4: conflict miss"; 
+        test_case_info = "testcase 5: conflict miss"; 
         @(negedge dcache_tb.clk); 
         dcache_tb.dcif.dmemWEN = 0;
         dcache_tb.dcif.dmemREN = 1;
         dcache_tb.dcif.dmemaddr = {26'h280, 3'h0, 1'b0, 2'b00};
-        check_dhit(1'b0); 
         dcache_tb.cif.dwait = 0;
 
         wait(dcache_tb.cif.dREN);
@@ -137,25 +144,39 @@ program test;
         dcache_tb.cif.dwait = 0;
         dcache_tb.cif.dload = 32'h7;
         wait(dcif.dhit);
+        assert (dcif.dmemload == 32'h6)
+            else $display("wrong dmemload in testcase %0d", test_case_num);
         @(negedge dcache_tb.clk); 
         dcache_tb.dcif.dmemWEN = 0;
         dcache_tb.dcif.dmemREN = 0;
+        #(PERIOD);
         
-        
-        test_case_info = "testcase 5: writing to cache"; 
+        test_case_info = "testcase 6: write miss"; 
         test_case_num++;
         @(negedge dcache_tb.clk); 
         dcache_tb.cif.dwait = 1;
         dcache_tb.dcif.dmemREN = 0;
         dcache_tb.dcif.dmemWEN = 1;
-        dcache_tb.dcif.dmemaddr = {26'h280, 3'h0, 1'b1, 2'b00};
-        dcache_tb.dcif.dmemstore = 32'h8888;
-        check_dhit(1'b1);
+        dcache_tb.dcif.dmemaddr = {26'h380, 3'h2, 1'b1, 2'b00};
+        dcache_tb.dcif.dmemstore = 32'hbad1;        
+
+        wait(dcache_tb.cif.dREN | dcache_tb.cif.dWEN);
         @(negedge dcache_tb.clk); 
-        dcache_tb.dcif.dmemWEN = 0;
-        dcache_tb.dcif.dmemREN = 0;
+        dcache_tb.cif.dwait = 0;
+        dcache_tb.cif.dload = 32'hdead;
         
-        //check hit counter = 3
+        wait(dcache_tb.cif.dREN | dcache_tb.cif.dWEN);
+        @(negedge dcache_tb.clk); 
+        dcache_tb.dcif.dmemaddr = {26'h380, 3'h2, 1'b1, 2'b00};
+        dcache_tb.cif.dwait = 0;
+        dcache_tb.cif.dload = 32'hbeef;
+
+        wait(dcif.dhit); 
+        
+        #(PERIOD);
+
+        
+        //check hit counter = ?
         #(PERIOD);
         #(PERIOD);
 
