@@ -43,14 +43,18 @@ module datapath (
   mem_wb_reg mem_wb (.CLK(CLK), .nRST(nRST), .rif(rif)); 
 
   // forwarding signals
-  logic [1:0] forwardA;
-  logic [1:0] forwardB;
+  logic [1:0] forwardA; 
+  logic [1:0] forwardB; 
+
+  // signal for stalling until dhit for lw and sw
+  logic mem_op_stall;
+  assign mem_op_stall = (((opcode_t'(rif.ex_mem_out.imemload[31:26]) == SW) || (opcode_t'(rif.ex_mem_out.imemload[31:26]) == LW)) && ~dpif.dhit); 
 
   // forwarding unit.
   forwarding fwding (.fwif(fwif));
 
   // stall signals
-  logic stall;
+  logic stall; 
   // IF (Instruction Fetch): PC update. 
   logic halt; 
   assign halt = opcode_t'(dpif.imemload[31:26]) == HALT; 
@@ -170,7 +174,7 @@ module datapath (
   // PC
 
   always_comb begin : PC_MUX
-    if (huif.pcen && dpif.ihit) begin
+    if (huif.pcen && dpif.ihit && ~mem_op_stall) begin
       casez (rif.ex_mem_out.pcsrc)
         PCSRC_REG: npc = rif.ex_mem_out.rdat1; 
         PCSRC_JAL: npc = rif.ex_mem_out.jaddr; 
@@ -240,10 +244,10 @@ module datapath (
   assign huif.zero = rif.ex_mem_out.zero; 
   assign huif.mem_pcsrc = rif.ex_mem_out.pcsrc; 
   assign huif.dmemREN = rif.id_ex_out.dREN;
-  assign rif.if_id_en = huif.if_id_en & (dpif.ihit | dpif.dhit); 
-  assign rif.id_ex_en = huif.id_ex_en & (dpif.ihit | dpif.dhit); 
-  assign rif.ex_mem_en = huif.ex_mem_en & (dpif.ihit | dpif.dhit); 
-  assign rif.mem_wb_en = huif.mem_wb_en & (dpif.ihit | dpif.dhit); 
+   assign rif.if_id_en = (huif.if_id_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
+   assign rif.id_ex_en = (huif.id_ex_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
+   assign rif.ex_mem_en = (huif.ex_mem_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
+   assign rif.mem_wb_en = (huif.mem_wb_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
   assign rif.if_id_flush = huif.if_id_flush; 
   assign rif.id_ex_flush = huif.id_ex_flush; 
   assign rif.ex_mem_flush = huif.ex_mem_flush; 

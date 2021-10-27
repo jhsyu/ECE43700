@@ -21,7 +21,7 @@ module dcache(
     logic hit_frame; 
     logic evict_id; 
     logic [4:0] dump_idx, nxt_dump_idx; // 0:blkoff 1:frame [4:2] set
-    assign daddr = dcachef_t'(dcif.dmemaddr);
+    assign daddr = dcachef_t'(dcif.dmemaddr); 
     assign evict_id = ~set[daddr.idx].lru_id;
     assign dcif.dmemload = set[daddr.idx].frame[hit_frame].data[daddr.blkoff];
     
