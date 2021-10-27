@@ -15,5 +15,8 @@ package caches_types_pkg;
         dcache_frame [1:0] frame; 
     } dcache_line_t;
 
+    typedef enum logic {
+      IC_IDLE, IC_MISS
+    } icache_state_t;
 endpackage
 `endif
