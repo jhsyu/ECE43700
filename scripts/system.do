@@ -2,11 +2,11 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate /system_tb/CLK
 add wave -noupdate /system_tb/nRST
-add wave -noupdate -group PC /system_tb/DUT/CPU/DP/cuif/pcsrc
-add wave -noupdate -group PC /system_tb/DUT/CPU/DP/cpc
-add wave -noupdate -group PC /system_tb/DUT/CPU/DP/npc
-add wave -noupdate -group PC /system_tb/DUT/CPU/DP/pc4
-add wave -noupdate -group PC /system_tb/DUT/CPU/DP/huif/pcen
+add wave -noupdate -expand -group PC /system_tb/DUT/CPU/DP/cuif/pcsrc
+add wave -noupdate -expand -group PC /system_tb/DUT/CPU/DP/cpc
+add wave -noupdate -expand -group PC /system_tb/DUT/CPU/DP/npc
+add wave -noupdate -expand -group PC /system_tb/DUT/CPU/DP/pc4
+add wave -noupdate -expand -group PC /system_tb/DUT/CPU/DP/huif/pcen
 add wave -noupdate -group CU /system_tb/DUT/CPU/DP/cuif/opcode
 add wave -noupdate -group CU -radix binary /system_tb/DUT/CPU/DP/cuif/funct
 add wave -noupdate -group CU /system_tb/DUT/CPU/DP/cuif/pcsrc
@@ -25,17 +25,17 @@ add wave -noupdate -group RAM -radix hexadecimal /system_tb/DUT/RAM/ramif/ramadd
 add wave -noupdate -group RAM /system_tb/DUT/RAM/ramif/ramstore
 add wave -noupdate -group RAM /system_tb/DUT/RAM/ramif/ramload
 add wave -noupdate -group RAM /system_tb/DUT/RAM/ramif/ramstate
-add wave -noupdate -group datapath /system_tb/DUT/CPU/dcif/halt
-add wave -noupdate -group datapath /system_tb/DUT/CPU/dcif/ihit
-add wave -noupdate -group datapath /system_tb/DUT/CPU/dcif/imemREN
-add wave -noupdate -group datapath /system_tb/DUT/CPU/dcif/imemload
-add wave -noupdate -group datapath /system_tb/DUT/CPU/dcif/imemaddr
-add wave -noupdate -group datapath /system_tb/DUT/CPU/dcif/dhit
-add wave -noupdate -group datapath /system_tb/DUT/CPU/dcif/dmemREN
-add wave -noupdate -group datapath /system_tb/DUT/CPU/dcif/dmemWEN
-add wave -noupdate -group datapath /system_tb/DUT/CPU/dcif/dmemload
-add wave -noupdate -group datapath /system_tb/DUT/CPU/dcif/dmemstore
-add wave -noupdate -group datapath /system_tb/DUT/CPU/dcif/dmemaddr
+add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/halt
+add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/ihit
+add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/imemREN
+add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/imemload
+add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/imemaddr
+add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/dhit
+add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/dmemREN
+add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/dmemWEN
+add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/dmemload
+add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/dmemstore
+add wave -noupdate -expand -group datapath /system_tb/DUT/CPU/dcif/dmemaddr
 add wave -noupdate /system_tb/DUT/CPU/DP/imm32
 add wave -noupdate -group ALU /system_tb/DUT/CPU/DP/rif/id_ex_out.alusrc
 add wave -noupdate -group ALU /system_tb/DUT/CPU/DP/forwardA
@@ -110,6 +110,7 @@ add wave -noupdate -group MEM /system_tb/DUT/CPU/DP/rif/ex_mem_out.regtbw
 add wave -noupdate -group MEM /system_tb/DUT/CPU/DP/rif/ex_mem_out.regWEN
 add wave -noupdate -group MEM /system_tb/DUT/CPU/DP/rif/ex_mem_out.jaddr
 add wave -noupdate -group MEM /system_tb/DUT/CPU/DP/rif/mem_wb_in.npc
+add wave -noupdate -group MEM /system_tb/DUT/CPU/CM/dcif/imemload
 add wave -noupdate -group MEM /system_tb/DUT/CPU/DP/rif/ex_mem_out.imemload
 add wave -noupdate -group WB /system_tb/DUT/CPU/DP/rif/mem_wb_out.pc
 add wave -noupdate -group WB /system_tb/DUT/CPU/DP/rif/mem_wb_out.imemload
@@ -140,7 +141,7 @@ add wave -noupdate -expand -group dcache /system_tb/DUT/CPU/cif0/dWEN
 add wave -noupdate -expand -group dcache /system_tb/DUT/CPU/cif0/dload
 add wave -noupdate -expand -group dcache /system_tb/DUT/CPU/cif0/dstore
 add wave -noupdate -expand -group dcache /system_tb/DUT/CPU/cif0/daddr
-add wave -noupdate -expand -group dcache /system_tb/DUT/CPU/CM/DCACHE/daddr
+add wave -noupdate -expand -group dcache -expand /system_tb/DUT/CPU/CM/DCACHE/daddr
 add wave -noupdate -expand -group dcache /system_tb/DUT/CPU/CM/DCACHE/set
 add wave -noupdate -expand -group dcache /system_tb/DUT/CPU/CM/DCACHE/ds
 add wave -noupdate -expand -group dcache /system_tb/DUT/CPU/CM/DCACHE/nds
@@ -149,8 +150,30 @@ add wave -noupdate -expand -group dcache /system_tb/DUT/CPU/CM/DCACHE/hit_frame
 add wave -noupdate -expand -group dcache /system_tb/DUT/CPU/CM/DCACHE/evict_id
 add wave -noupdate -expand -group dcache /system_tb/DUT/CPU/cif0/dwait
 add wave -noupdate -expand -group dcache /system_tb/DUT/CPU/dcif/dhit
+add wave -noupdate /system_tb/DUT/CPU/DP/cpc
+add wave -noupdate /system_tb/DUT/CPU/DP/npc
+add wave -noupdate /system_tb/DUT/CPU/DP/rif/ex_mem_out.rdat1
+add wave -noupdate /system_tb/DUT/CPU/DP/huif/if_id_flush
+add wave -noupdate /system_tb/DUT/CPU/DP/huif/id_ex_flush
+add wave -noupdate /system_tb/DUT/CPU/DP/huif/ex_mem_flush
+add wave -noupdate /system_tb/DUT/CPU/DP/huif/mem_wb_flush
+add wave -noupdate /system_tb/DUT/CPU/DP/rif/id_ex_in.imemload
+add wave -noupdate /system_tb/DUT/CPU/DP/rif/id_ex_out.imemload
+add wave -noupdate /system_tb/DUT/CPU/dcif/halt
+add wave -noupdate /system_tb/DUT/CPU/CM/dcif/ihit
+add wave -noupdate /system_tb/DUT/CPU/cif0/iaddr
+add wave -noupdate /system_tb/DUT/CPU/DP/rif/ex_mem_out.imemload
+add wave -noupdate /system_tb/DUT/CPU/DP/rif/mem_wb_out.imemload
+add wave -noupdate /system_tb/DUT/CPU/CM/DCACHE/ds
+add wave -noupdate /system_tb/DUT/CPU/dcif/dhit
+add wave -noupdate /system_tb/DUT/CPU/cif0/daddr
+add wave -noupdate -label tag /system_tb/DUT/CPU/CM/DCACHE/daddr.tag
+add wave -noupdate -label idx /system_tb/DUT/CPU/CM/DCACHE/daddr.idx
+add wave -noupdate /system_tb/DUT/CPU/CM/dcif/dmemREN
+add wave -noupdate /system_tb/DUT/CPU/CM/dcif/dmemWEN
+add wave -noupdate -radix unsigned /system_tb/DUT/CPU/CM/DCACHE/hit_count
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {1313002291 ps} 0}
+WaveRestoreCursors {{Cursor 1} {10180172 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 184
 configure wave -valuecolwidth 146
@@ -166,4 +189,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {1312591050 ps} {1314032050 ps}
+WaveRestoreZoom {8845800 ps} {10768800 ps}

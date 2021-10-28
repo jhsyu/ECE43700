@@ -38,6 +38,7 @@ module hazard_unit (
         endcase
 
         if (~phit) begin    // misprediction
+            huif.if_id_en = 1'b1; 
             huif.pcen = 1'b1;
             huif.if_id_flush = 1'b1; 
             huif.id_ex_flush = 1'b1; 

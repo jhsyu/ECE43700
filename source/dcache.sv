@@ -66,12 +66,12 @@ module dcache(
         else if (ds == ALLOC0 && ~cif.dwait) begin
             // if the current state is ALLOC0, and dload is ready. 
             set[daddr.idx].frame[evict_id].data[0]    <= cif.dload; 
-            set[daddr.idx].frame[evict_id].tag        <= daddr.tag;         
         end
         // load second word. 
         else if (ds == ALLOC1 && ~cif.dwait) begin
             // also sets dirty, valid. 
             set[daddr.idx].frame[evict_id].data[1]    <= cif.dload; 
+            set[daddr.idx].frame[evict_id].tag        <= daddr.tag;         
             set[daddr.idx].frame[evict_id].dirty      <= 1'b0; 
             set[daddr.idx].frame[evict_id].valid      <= 1'b1; 
         end

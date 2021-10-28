@@ -158,8 +158,8 @@ module datapath (
   assign rif.ex_mem_in.pc = rif.id_ex_out.pc; 
   assign rif.ex_mem_in.pc4 = rif.id_ex_out.pc4; 
   assign rif.ex_mem_in.alu_out = aluif.port_o; 
-  assign rif.ex_mem_in.rdat1 = rif.id_ex_out.rdat1; 
-  assign rif.ex_mem_in.rdat2 = rif.id_ex_out.rdat2; 
+  assign rif.ex_mem_in.rdat1 = rdat1_fwd; 
+  assign rif.ex_mem_in.rdat2 = rdat2_fwd; 
   assign rif.ex_mem_in.halt = rif.id_ex_out.halt; 
   assign rif.ex_mem_in.regsrc = rif.id_ex_out.regsrc; 
   assign rif.ex_mem_in.imm32 = rif.id_ex_out.imm32; 
@@ -244,10 +244,10 @@ module datapath (
   assign huif.zero = rif.ex_mem_out.zero; 
   assign huif.mem_pcsrc = rif.ex_mem_out.pcsrc; 
   assign huif.dmemREN = rif.id_ex_out.dREN;
-   assign rif.if_id_en = (huif.if_id_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
-   assign rif.id_ex_en = (huif.id_ex_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
-   assign rif.ex_mem_en = (huif.ex_mem_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
-   assign rif.mem_wb_en = (huif.mem_wb_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
+  assign rif.if_id_en = (huif.if_id_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
+  assign rif.id_ex_en = (huif.id_ex_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
+  assign rif.ex_mem_en = (huif.ex_mem_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
+  assign rif.mem_wb_en = (huif.mem_wb_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
   assign rif.if_id_flush = huif.if_id_flush; 
   assign rif.id_ex_flush = huif.id_ex_flush; 
   assign rif.ex_mem_flush = huif.ex_mem_flush; 
