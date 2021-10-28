@@ -14,7 +14,7 @@
 
 module caches (
   input logic CLK, nRST,
-  datapath_cache_if.cache dcif,
+  datapath_cache_if dcif,
   caches_if cif
 );
 
@@ -22,9 +22,9 @@ module caches (
   // word_t daddr;
 
   // icache
-  icache  ICACHE(.CLK(CLK), .nRST(nRST), .dcif(dcif), .cif(cif));
+  icache  ICACHE(.CLK(CLK), .nRST(nRST), .dcif(dcif.icache), .cif(cif));
   // dcache
-  dcache  DCACHE(.CLK(CLK), .nRST(nRST), .dcif(dcif), .cif(cif));
+  dcache  DCACHE(.CLK(CLK), .nRST(nRST), .dcif(dcif.dcache), .cif(cif));
 
   // single cycle instr saver (for memory ops)
   // always_ff @(posedge CLK)

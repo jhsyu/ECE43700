@@ -11,7 +11,7 @@ import caches_types_pkg::*;
 
 module dcache(
     input logic CLK, nRST, 
-    datapath_cache_if.dcache dcif,
+    datapath_cache_if.dcache dcif, 
     caches_if.dcache cif 
 );  
     dcachef_t daddr; 
