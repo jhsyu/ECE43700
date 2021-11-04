@@ -11,6 +11,20 @@ typedef enum logic[4:0] {
     FWD1, FWD2, FWD3, FWD4	// busrd, supply data from other cache to this. 
 } cc_state_t;
 
+/*
+Cases: 
+	ID			0			1
+	s		  I->S		   S/I 			SNP->LD			P1 no change, SNP-> LD
+	s		  I->S		   M->S			SNP->FWDWB		data comes from another cache. UPDATE MEM		
+	
+	s		  I->M		    I			SNP->LD			write miss, data load from memory. 
+	s 		I->(S->)M	M->(S->)I		SNP->FWD->INV	write miss, invalidate P1, no need to update MEM.
+	s		I->(S->)M	S->(S->)I		SNP->LD->INV	no cctrans when s->s. load from MEM
+	s 		  S->M			I			IDLE			write hit, dWEN not asserted. no change on P1.
+	s		  S->M		   S->I			INV				write hit on P0, invalidate P1.
+	s		  M->I			-			WB				entry get evicted. 
+*/
+
 module coherence_control (
 	input logic CLK, nRST, 
 	cache_control_if ccif
@@ -56,37 +70,15 @@ module coherence_control (
 				nxt_prid = ccif.cctrans[~prid] ? ~prid : prid;  
 				// check the reason of cctrans. 
 				if (ccif.cctrans[nxt_prid] && ccif.dREN[nxt_prid]) begin
-					// this is a prRd. 
-					// but still need to deal with write, because we allocate first.
-					// every write miss is a read miss as well. 
-					// ID	nxt_prid ~nxt_prid
-					// 	s	  I->S	   M->S		(FWDWB)
-					//	s	  I->M	   S,M->I 	(FWD)
-					//	s	  I->S	   S, I		(LOAD)
 					nxt_s = SNP1; 
 				end
 				else if (ccif.cctrans[nxt_prid] && ccif.dWEN[nxt_prid]) begin
-					// prWr	(invaliddation of id=1 will be finished in next serve cycle. )
-					// ID	nxt_prid ~nxt_prid
-					//	s	  I->M	   S->I		(WB)
-					// 	s	  I->M	   M->I		(WB)
-					//	s	  S->M	   S->I		(WB) cache transfer not nessary, but wb needed.
-					//  s     I->M	    I		(WB, no INV. )
-					//  s     S->M	    I		(WB, no INV. )
 					nxt_s = WB1;
 				end
 				else if(ccif.cctrans[nxt_prid]) begin
-					// ID	nxt_prid ~nxt_prid
-					// 	s	  I->M	   M->I		(WB, INV)
-					//	s	  I->M	   S->I		(WB, INV)
-					//	s	  S->M	   S->I		(WB, INV) 
 					nxt_s = INV; 
 				end
 				else begin
-					// ID	nxt_prid ~nxt_prid
-					// 	s	  M->M	   	I		(HIT)
-					//	s	  S->S	   	-		(HIT)
-					//  S	  M->S		I		(cache write back.)
 					nxt_s = IDLE; 
 				end
 			end 
@@ -103,7 +95,7 @@ module coherence_control (
 				ccif.ccwait[~prid] = 1'b1; 
 				if (ccif.cctrans[~prid] && ccif.ccwrite[prid]) nxt_s = FWD1; // if write no need to modify mem. 
 				else if (ccif.cctrans[~prid] && ~ccif.ccwrite[prid]) nxt_s = FWDWB1;
-				else nxt_s = LD1; //[~prid]: S or I
+				else nxt_s = LD1; 
 			end
 			WB1: begin
 				ccif.ramWEN = 1'b1; 
