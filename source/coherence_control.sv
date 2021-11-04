@@ -1,5 +1,6 @@
 `include "cache_control_if.vh"
 `include "cpu_types_pkg.vh"
+import cpu_types_pkg::*; 
 
 typedef enum logic[4:0] {
     IDLE, INV,  
@@ -17,7 +18,7 @@ module coherence_control (
 	cc_state_t s, nxt_s; 
 	logic prid, nxt_prid; 
 
-	word_t [CPU-1 : 0] daddr, dstore; 
+	word_t [1 : 0] daddr, dstore; 
 	ramstate_t ramstate; 
 	// latch the signals potentially change during the cycle. 
 	always_ff @(posedge CLK) begin
@@ -74,12 +75,12 @@ module coherence_control (
 					//  s     S->M	    I		(WB, no INV. )
 					nxt_s = WB1;
 				end
-				else if(cctrans[nxt_prid]) begin
+				else if(ccif.cctrans[nxt_prid]) begin
 					// ID	nxt_prid ~nxt_prid
 					// 	s	  I->M	   M->I		(WB, INV)
 					//	s	  I->M	   S->I		(WB, INV)
 					//	s	  S->M	   S->I		(WB, INV) 
-					mxt_s = INV1; 
+					nxt_s = INV; 
 				end
 				else begin
 					// ID	nxt_prid ~nxt_prid
@@ -100,9 +101,9 @@ module coherence_control (
 			end
 			SNP3: begin
 				ccif.ccwait[~prid] = 1'b1; 
-				if (cctrans[~prid] && ccif.ccwrite[prid]) nxt_s = FWD1; // if write no need to modify mem. 
-				else if (cctrans[~prid] && ~ccif.ccwrite[prid]) nxt_s = FWDWB1;
-				else nxt_s = LOAD1; //[~prid]: S or I
+				if (ccif.cctrans[~prid] && ccif.ccwrite[prid]) nxt_s = FWD1; // if write no need to modify mem. 
+				else if (ccif.cctrans[~prid] && ~ccif.ccwrite[prid]) nxt_s = FWDWB1;
+				else nxt_s = LD1; //[~prid]: S or I
 			end
 			WB1: begin
 				ccif.ramWEN = 1'b1; 
@@ -125,7 +126,7 @@ module coherence_control (
 			end
 			INV: begin
 				// invalidate copy in [~nxt_prid]
-				ccif.inv[~prid] = 1'b1; 
+				ccif.ccinv[~prid] = 1'b1; 
 				ccif.dwait[prid] = 1'b1; 
 				nxt_s = IDLE; 
 			end
@@ -156,7 +157,7 @@ module coherence_control (
 			end
 			FWDWB2: begin
 				ccif.ramstore = dstore[~prid]; 
-				ccif.daddr = daddr[~prid]; 
+				ccif.ramaddr = daddr[~prid]; 
 				ccif.ramWEN = 1'b1; 
 				ccif.dwait[~prid] = ~(ccif.ramstate == ACCESS); 
 				nxt_s = (ccif.ramstate == ACCESS) ? FWDWB2 : FWDWB1; 
@@ -173,7 +174,7 @@ module coherence_control (
 			end
 			FWDWB5: begin
 				ccif.ramstore = dstore[~prid]; 
-				ccif.daddr = daddr[~prid]; 
+				ccif.ramaddr = daddr[~prid]; 
 				ccif.ramWEN = 1'b1; 
 				ccif.dwait[~prid] = ~(ccif.ramstate == ACCESS); 
 				nxt_s = (ccif.ramstate == ACCESS) ? IDLE : FWDWB5; 
