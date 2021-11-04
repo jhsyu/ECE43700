@@ -18,8 +18,8 @@ Cases:
 	s		  I->S		   M->S			SNP->FWDWB		data comes from another cache. UPDATE MEM		
 	
 	s		  I->M		    I			SNP->LD			write miss, data load from memory. 
-	s 		I->(S->)M	M->(S->)I		SNP->FWD->INV	write miss, invalidate P1, no need to update MEM.
-	s		I->(S->)M	S->(S->)I		SNP->LD->INV	no cctrans when s->s. load from MEM
+	s 		I->(S->)M	M->(S->)I		SNP->FWD (INV)	write miss, invalidate P1, no need to update MEM.
+	s		I->(S->)M	S->(S->)I		SNP->LD  (INV)	no cctrans when s->s. load from MEM
 	s 		  S->M			I			IDLE			write hit, dWEN not asserted. no change on P1.
 	s		  S->M		   S->I			INV				write hit on P0, invalidate P1.
 	s		  M->I			-			WB				entry get evicted. 
@@ -84,15 +84,18 @@ module coherence_control (
 			end 
 			SNP1: begin
 				ccif.ccwait[~prid] = 1'b1; 
+				ccif.ccinv[~prid] = ccif.ccwrite[prid]; // invalidation happens only when write.
 				nxt_s = SNP2; 
 			end
 			SNP2: begin
 				// wait for other cache to reesponse. 
 				ccif.ccwait[~prid] = 1'b1; 
+				ccif.ccinv[~prid] = ccif.ccwrite[prid];
 				nxt_s = SNP3; 
 			end
 			SNP3: begin
 				ccif.ccwait[~prid] = 1'b1; 
+				ccif.ccinv[~prid] = ccif.ccwrite[prid]; 
 				if (ccif.cctrans[~prid] && ccif.ccwrite[prid]) nxt_s = FWD1; // if write no need to modify mem. 
 				else if (ccif.cctrans[~prid] && ~ccif.ccwrite[prid]) nxt_s = FWDWB1;
 				else nxt_s = LD1; 
