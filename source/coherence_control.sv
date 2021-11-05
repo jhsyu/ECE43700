@@ -155,7 +155,7 @@ module coherence_control (
 				ccif.ramaddr = daddr[~prid]; 
 				ccif.ramWEN = 1'b1; 
 				ccif.dwait[~prid] = ~(ccif.ramstate == ACCESS); 
-				nxt_s = (ccif.ramstate == ACCESS) ? FWDWB2 : FWDWB1; 
+				nxt_s = (ccif.ramstate == ACCESS) ? FWDWB3 : FWDWB2; 
 			end
 			FWDWB3: begin
 				// wait for [~prid] assign 2nd word. 
@@ -199,7 +199,4 @@ module coherence_control (
 			end
 		endcase
 	end
-
-
-	
 endmodule
