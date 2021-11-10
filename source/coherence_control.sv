@@ -7,7 +7,7 @@ typedef enum logic[4:0] {
     SNP1, SNP2, SNP3,		// broadcast the data request and wait for response. 
     WB1, WB2, WB3,			// M->I, no forward, just update memory. 
     LD1, LD2, LD3, LD4,		// also miss in another cache. load from memory.
-    IRD1, IRD2, IRD3,           // miss in the icache. load from memory. (no need for forwarding)
+    IRD,                        // miss in the icache. load from memory. (no need for forwarding)
     FWDWB1, FWDWB2, FWDWB3, FWDWB4, FWDWB5, // M->S, the data comes from another cache. 
     FWD1, FWD2, FWD3, FWD4	// busrd, supply data from other cache to this. 
 } cc_state_t;
@@ -73,7 +73,7 @@ module coherence_control (
 			IDLE: begin
 				// nxt_prid = ccif.cctrans[~prid] ? ~prid : prid; 
 			        // if both processors assert at the same time, toggle prid
-			        if ((ccif.dREN[0] && ccif.dREN[1]) || (ccif.dWEN[0] && ccif.dWEN[1]) || (ccif.iREN[0] && ccif.iREN[1]) ) begin
+			        if ((ccif.dREN[0] && ccif.dREN[1]) || (ccif.dWEN[0] && ccif.dWEN[1]) || (ccif.iREN[0] && ccif.iREN[1])) begin
 				        nxt_prid = prid ^ 1'b1;
 				end
 			        else begin
@@ -87,7 +87,7 @@ module coherence_control (
 					nxt_s = WB1;
 				end
 			        else if (ccif.cctrans[nxt_prid] && ccif.iREN[nxt_prid]) begin
-				        nxt_s = IRD1;
+				        nxt_s = IRD;
 				end
 				else if (ccif.cctrans[nxt_prid]) begin
 					nxt_s = INV; 
@@ -212,27 +212,12 @@ module coherence_control (
 				nxt_s = (ccif.ramstate == ACCESS) ? IDLE : LD3;
 			end
 
-		        IRD1: begin
-				ccif.ccwait[~prid] = 1'b1;
+		        IRD: begin
 				ccif.ramaddr = iaddr[prid]; 
 				ccif.ramREN = 1'b1;
 				ccif.iload[prid] = ccif.ramload; 
 				ccif.iwait[prid] = (ccif.ramstate == ACCESS);  
-				nxt_s = (ccif.ramstate == ACCESS) ? IRD2 : IRD1;
-			end
-
-			IRD2: begin
-				ccif.ramREN = 1'b0; 
-				nxt_s = IRD3; 
-			end
-
-			IRD3: begin
-				ccif.ccwait[~prid] = 1'b1;
-				ccif.ramaddr = iaddr[prid]; 
-				ccif.ramREN = 1'b1;
-				ccif.iload[prid] = ccif.ramload; 
-				ccif.iwait[prid] = (ccif.ramstate == ACCESS);  
-				nxt_s = (ccif.ramstate == ACCESS) ? IDLE : IRD3;
+				nxt_s = (ccif.ramstate == ACCESS) ? IDLE : IRD;
 			end
 		endcase
 	end

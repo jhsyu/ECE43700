@@ -25,7 +25,14 @@ module dcache(
     assign daddr = dcachef_t'(dcif.dmemaddr); 
     assign evict_id = ~set[daddr.idx].lru_id;
     assign dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff];
-    
+
+    logic old_dWEN, old_dREN;
+    always_ff @(posedge CLK, negedge nRST) begin
+       old_dWEN <= cif.dWEN;
+       old_dREN <= cif.dREN;
+    end
+    // output cctrans and ccwrite signals
+    assign cif.cctrans = ((cif.dWEN && ~old_dWEN) || (cif.dREN && ~old_dREN)) ? 1'b1 : 1'b0;
     // check the cache frame and assert dhit.
     logic dhit;
     assign dcif.dhit = dhit & hit_frame.valid & (dcif.dmemREN | (dcif.dmemWEN & hit_frame.dirty)); 
