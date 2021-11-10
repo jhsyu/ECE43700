@@ -102,7 +102,7 @@ module dcache(
                     set[daddr.idx].lru_id <= hit_frame_idx; 
                 end
                 else if (dhit && dcif.dmemWEN) begin
-                    set[daddr.idx].lru_id = hit_frame_idx; 
+                    set[daddr.idx].lru_id <= hit_frame_idx; 
                     set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff] <= dcif.dmemstore; 
                     set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
                 end
@@ -110,13 +110,13 @@ module dcache(
         end
 
         else if (dhit & dcif.dmemWEN) begin
-            set[daddr.idx].lru_id = hit_frame_idx; 
+            set[daddr.idx].lru_id <= hit_frame_idx; 
             set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff] <= dcif.dmemstore; 
             set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
         end
         else if (dhit & dcif.dmemREN) begin
             // update the lru_id upon a dhit
-            set[daddr.idx].lru_id = hit_frame_idx; 
+            set[daddr.idx].lru_id <= hit_frame_idx; 
         end
         // load 1st word. 
         else if (ds == ALLOC0 && ~cif.dwait) begin
