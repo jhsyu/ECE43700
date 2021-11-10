@@ -18,49 +18,105 @@ module dcache(
     dcache_line_t [7:0] set; 
     dcache_state_t ds, nds; 
     word_t hit_count; 
-    logic hit_frame; 
+    logic hit_frame_idx, snp_hit_frame_idx;
+    dcache_frame hit_frame, snp_hit_frame;  
     logic evict_id; 
     logic [4:0] dump_idx, nxt_dump_idx; // 0:blkoff 1:frame [4:2] set
     assign daddr = dcachef_t'(dcif.dmemaddr); 
     assign evict_id = ~set[daddr.idx].lru_id;
-    assign dcif.dmemload = set[daddr.idx].frame[hit_frame].data[daddr.blkoff];
+    assign dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff];
     
     // check the cache frame and assert dhit.
+    logic dhit;
+    assign dcif.dhit = dhit & hit_frame.valid & (dcif.dmemREN | (dcif.dmemWEN & hit_frame.dirty)); 
+    // dirty: wait until the content in dcache updated then assert dhit. 
+    // the dirty bit will be set only after the invalidation is done. 
     always_comb begin
         if (set[daddr.idx].frame[0].valid && 
             set[daddr.idx].frame[0].tag == daddr.tag) begin
             // hit on frame 0. 
-            dcif.dhit = 1'b1; 
-            hit_frame = 1'b0; 
+            dhit = 1'b1; 
+            hit_frame_idx = 1'b0; 
+            hit_frame = set[daddr.idx].frame[0]; 
         end 
         else if (
             set[daddr.idx].frame[1].valid && 
             set[daddr.idx].frame[1].tag == daddr.tag)begin
             // hit on frame 1.
-            dcif.dhit = 1'b1; 
-            hit_frame = 1'b1; 
-
+            dhit = 1'b1; 
+            hit_frame_idx = 1'b1; 
+            hit_frame = set[daddr.idx].frame[1]; 
         end
         else begin
             // miss. 
-            dcif.dhit = 1'b0; 
-            hit_frame = 1'b0; 
+            dhit = 1'b0; 
+            hit_frame_idx = 1'b0; 
+            hit_frame = '0; 
+        end
+    end
+    logic snp_hit; 
+    always_comb begin
+        if (set[cif.ccsnoopaddr.idx].frame[0].valid && 
+            set[cif.ccsnoopaddr.idx].frame[0].tag == cif.ccsnoopaddr.tag) begin
+            // snoop hit on frame 0.
+            snp_hit = 1'b1;  
+            snp_hit_frame_idx = 1'b0; 
+            snp_hit_frame = set[daddr.idx].frame[0]; 
+        end 
+        else if (
+            set[cif.ccsnoopaddr.idx].frame[1].valid && 
+            set[cif.ccsnoopaddr.idx].frame[1].tag == cif.ccsnoopaddr.tag)begin
+            // snoop hit on frame 1.
+            snp_hit = 1'b1; 
+            snp_hit_frame_idx = 1'b1; 
+            snp_hit_frame = set[daddr.idx].frame[1]; 
+        end
+        else begin
+            // miss. 
+            snp_hit = 1'b0; 
+            snp_hit_frame_idx = 1'b0; 
+            snp_hit_frame = '0; 
         end
     end
 
     // initialization, load from memory, update lru_id. 
+    // all the content of cacheline will be updated in this combinational block. 
     always_ff @(posedge CLK or negedge nRST) begin
         if (~nRST) begin
             set <= '0; 
         end
-        else if (dcif.dhit & dcif.dmemWEN) begin
-            set[daddr.idx].lru_id = hit_frame; 
-            set[daddr.idx].frame[hit_frame].data[daddr.blkoff] <= dcif.dmemstore; 
-            set[daddr.idx].frame[hit_frame].dirty <= 1'b1; 
+        if ((cif.ccinv | cif.ccwait) & snp_hit) begin
+            // invalid the copy of THIS dcache. 
+            set[cif.ccsnoopaddr.idx].frame[snp_hit_frame_idx].valid <= ~cif.ccinv; 
+            // will be moved to other caches (FWD) or write to mem (FWDWB), or get invalidated. 
+            set[cif.ccsnoopaddr.idx].frame[snp_hit_frame_idx].dirty <= 1'b0; 
+            // if invalidated., replace this block in the incomming conflict. 
+            // if just wait, keep the current case. 
+            set[cif.ccsnoopaddr.idx].lru_id <= (cif.ccinv) ?  ~snp_hit_frame_idx : set[cif.ccsnoopaddr.idx].lru_id; 
+            // block the cpu R/W during ccwait.
+            if (cif.ccsnoopaddr.idx == daddr.idx && cif.ccsnoopaddr.tag == daddr.tag) begin
+                // block
+            end 
+            else begin
+                if (dhit && dcif.dmemREN) begin
+                    set[daddr.idx].lru_id <= hit_frame_idx; 
+                end
+                else if (dhit && dcif.dmemWEN) begin
+                    set[daddr.idx].lru_id = hit_frame_idx; 
+                    set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff] <= dcif.dmemstore; 
+                    set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
+                end
+            end
         end
-        else if (dcif.dhit & dcif.dmemREN) begin
+
+        else if (dhit & dcif.dmemWEN) begin
+            set[daddr.idx].lru_id = hit_frame_idx; 
+            set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff] <= dcif.dmemstore; 
+            set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
+        end
+        else if (dhit & dcif.dmemREN) begin
             // update the lru_id upon a dhit
-            set[daddr.idx].lru_id = hit_frame; 
+            set[daddr.idx].lru_id = hit_frame_idx; 
         end
         // load 1st word. 
         else if (ds == ALLOC0 && ~cif.dwait) begin
@@ -74,6 +130,12 @@ module dcache(
             set[daddr.idx].frame[evict_id].tag        <= daddr.tag;         
             set[daddr.idx].frame[evict_id].dirty      <= 1'b0; 
             set[daddr.idx].frame[evict_id].valid      <= 1'b1; 
+        end
+        else if (ds == WB1 & ~cif.dwait) begin
+            set[daddr.idx].frame[evict_id].dirty <= 1'b0; 
+        end
+        else if (ds == INV & ~cif.ccwait & ~cif.dwait) begin
+            set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
         end
     end
     always_ff @(posedge CLK, negedge nRST) begin
@@ -98,7 +160,7 @@ module dcache(
         casez(ds)
             IDLE: begin
                 if(dcif.halt) nds = DUMP; 
-                else if ((dcif.dmemREN || dcif.dmemWEN) && ~dcif.dhit) begin
+                else if ((dcif.dmemREN || dcif.dmemWEN) && ~dhit) begin
                     nds = (set[daddr.idx].frame[evict_id].dirty) ? WB0 : ALLOC0; 
                 end
             end
@@ -160,7 +222,7 @@ module dcache(
         if (~nRST) begin
             hit_count <= '0; 
         end
-        else if ((ds == IDLE) && dcif.dhit && (dcif.dmemWEN || dcif.dmemREN)) begin
+        else if ((ds == IDLE) && dhit && (dcif.dmemWEN || dcif.dmemREN)) begin
             hit_count <= hit_count + 1; 
         end
         else if ((ds == ALLOC1) && (~cif.dwait)) begin
