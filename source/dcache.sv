@@ -138,6 +138,9 @@ module dcache(
             set[daddr.idx].frame[evict_id].dirty      <= 1'b0; 
             set[daddr.idx].frame[evict_id].valid      <= 1'b1; 
         end
+        else if (ds == WB0 & ~cif.dwait) begin
+            set[daddr.idx].frame[evict_id].valid <= 1'b0; 
+        end
         else if (ds == WB1 & ~cif.dwait) begin
             set[daddr.idx].frame[evict_id].dirty <= 1'b0; 
         end
