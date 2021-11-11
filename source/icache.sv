@@ -26,7 +26,7 @@ module icache (
         else begin
             casez(s)
                 IC_IDLE: begin
-                    if (~(dcif.imemREN && set[iaddr.idx].valid && (set[iaddr.idx].tag == iaddr.tag))) begin
+                    if (dcif.imemREN && (~set[iaddr.idx].valid | ~(set[iaddr.idx].tag == iaddr.tag))) begin
                         s <= IC_MISS; 
                     end
                     else begin

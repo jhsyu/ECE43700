@@ -7,7 +7,7 @@
   addi $t2, $0, 0x3
 
   sw $t0, 0($s0) # invalid to modify
-  sw $t0, 0($s0) # modify to modify
+  sw $t1, 0($s0) # modify to modify
   lw $t1, 0($s1) # invalid to shared
   lw $t1, 0($s1) # shared to shared
   nop
@@ -16,7 +16,11 @@
   nop
   halt
 
-  org 0x2000 # core 1
+  org 0x160
+  cfw 0xABCD
+  cfw 0xBEEF
+
+  org 0x0200 # core 1
   addi $s0, $0, 0x160
   addi $s1, $0, 0x170
   addi $s2, $0, 0x180
