@@ -40,41 +40,77 @@ module system_tb;
   // for correct execution must be passed along to help with debugging.
   cpu_tracker                         cpu_track0 (
     // No need to change this
-    .CLK(DUT.CPU.DP.CLK),
+    .CLK(DUT.CPU.DP0.CLK),
     // This is the enable signal for the write back stage
-    .wb_enable(DUT.CPU.DP.wb_enable),
+    .wb_enable(DUT.CPU.DP0.wb_enable),
     // The 'funct' portion of an instruction. Must be of funct_t type
-    .funct(DUT.CPU.DP.cpu_tracker_funct),
+    .funct(DUT.CPU.DP0.cpu_tracker_funct),
     // The 'opcode' portion of an instruction. Must be of opcode_t type
-    .opcode(DUT.CPU.DP.cpu_tracker_opcode),
+    .opcode(DUT.CPU.DP0.cpu_tracker_opcode),
     // The 'rs' portion of an instruction
-    .rs(DUT.CPU.DP.cpu_tracker_rs),
+    .rs(DUT.CPU.DP0.cpu_tracker_rs),
     // The 'rt' portion of an instruction
-    .rt(DUT.CPU.DP.cpu_tracker_rt),
+    .rt(DUT.CPU.DP0.cpu_tracker_rt),
     // The final wsel
-    .wsel(DUT.CPU.DP.rfif.wsel),
+    .wsel(DUT.CPU.DP0.rfif.wsel),
     // The 32 bit instruction
-    .instr(DUT.CPU.DP.rif.mem_wb_out.imemload),
+    .instr(DUT.CPU.DP0.rif.mem_wb_out.imemload),
     // Connect the PC to this
-    .pc(DUT.CPU.DP.rif.mem_wb_out.pc),
+    .pc(DUT.CPU.DP0.rif.mem_wb_out.pc),
     // Connect the next PC value (the next registered value) here
-    .next_pc_val(DUT.CPU.DP.rif.mem_wb_out.npc),
+    .next_pc_val(DUT.CPU.DP0.rif.mem_wb_out.npc),
     // The final imm/shamt signals
     // This means it should already be extended 
-    .imm(DUT.CPU.DP.rif.mem_wb_out.imm32),
-    .shamt(DUT.CPU.DP.rif.mem_wb_out.imemload[10:6]),
+    .imm(DUT.CPU.DP0.rif.mem_wb_out.imm32),
+    .shamt(DUT.CPU.DP0.rif.mem_wb_out.imemload[10:6]),
     // the value for lui BEFORE being being shifted
-     .lui_pre_shift(DUT.CPU.DP.rif.mem_wb_out.lui_ext[31:16]),
+     .lui_pre_shift(DUT.CPU.DP0.rif.mem_wb_out.lui_ext[31:16]),
     // The branch target (aka offset added to npc)
-    .branch_addr(DUT.CPU.DP.rif.mem_wb_out.baddr),
+    .branch_addr(DUT.CPU.DP0.rif.mem_wb_out.baddr),
     // Port O of the ALU from the M/W register
-    .dat_addr(DUT.CPU.DP.rif.mem_wb_out.alu_out),
+    .dat_addr(DUT.CPU.DP0.rif.mem_wb_out.alu_out),
     // The value that was stored in memory during MEM stage
-    .store_dat(DUT.CPU.DP.rif.mem_wb_out.rdat2),
+    .store_dat(DUT.CPU.DP0.rif.mem_wb_out.rdat2),
     // The value selected to be written into register during WB stage
-    .reg_dat(DUT.CPU.DP.rfif.wdat)
+    .reg_dat(DUT.CPU.DP0.rfif.wdat)
   );
-  
+
+  cpu_tracker                         cpu_track1 (
+    // No need to change this
+    .CLK(DUT.CPU.DP1.CLK),
+    // This is the enable signal for the write back stage
+    .wb_enable(DUT.CPU.DP1.wb_enable),
+    // The 'funct' portion of an instruction. Must be of funct_t type
+    .funct(DUT.CPU.DP1.cpu_tracker_funct),
+    // The 'opcode' portion of an instruction. Must be of opcode_t type
+    .opcode(DUT.CPU.DP1.cpu_tracker_opcode),
+    // The 'rs' portion of an instruction
+    .rs(DUT.CPU.DP1.cpu_tracker_rs),
+    // The 'rt' portion of an instruction
+    .rt(DUT.CPU.DP1.cpu_tracker_rt),
+    // The final wsel
+    .wsel(DUT.CPU.DP1.rfif.wsel),
+    // The 32 bit instruction
+    .instr(DUT.CPU.DP1.rif.mem_wb_out.imemload),
+    // Connect the PC to this
+    .pc(DUT.CPU.DP1.rif.mem_wb_out.pc),
+    // Connect the next PC value (the next registered value) here
+    .next_pc_val(DUT.CPU.DP1.rif.mem_wb_out.npc),
+    // The final imm/shamt signals
+    // This means it should already be extended 
+    .imm(DUT.CPU.DP1.rif.mem_wb_out.imm32),
+    .shamt(DUT.CPU.DP1.rif.mem_wb_out.imemload[10:6]),
+    // the value for lui BEFORE being being shifted
+     .lui_pre_shift(DUT.CPU.DP1.rif.mem_wb_out.lui_ext[31:16]),
+    // The branch target (aka offset added to npc)
+    .branch_addr(DUT.CPU.DP1.rif.mem_wb_out.baddr),
+    // Port O of the ALU from the M/W register
+    .dat_addr(DUT.CPU.DP1.rif.mem_wb_out.alu_out),
+    // The value that was stored in memory during MEM stage
+    .store_dat(DUT.CPU.DP1.rif.mem_wb_out.rdat2),
+    // The value selected to be written into register during WB stage
+    .reg_dat(DUT.CPU.DP1.rfif.wdat)
+  );
 `else
   system                              DUT (,,,,//for altera debug ports
     CLK,

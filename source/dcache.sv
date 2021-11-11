@@ -246,19 +246,19 @@ module dcache(
                 cif.daddr = {set[dump_idx[4:2]].frame[dump_idx[1]].tag, dump_idx[4:2], dump_idx[0], 2'b0}; 
                 cif.dstore = set[dump_idx[4:2]].frame[dump_idx[1]].data[dump_idx[0]];
                 nxt_dump_idx = (~cif.dWEN || ~cif.dwait) ? dump_idx + 1 : dump_idx;
-	        if (dump_idx == 5'd31) begin
-		   if (cif.dWEN) begin
-		      if (cif.dwait) begin
-			 nds = DUMP;
-		      end
-		      else begin
-			 nds = COUNT;
-		      end
-		   end
-		   else begin
-		      nds = COUNT;
-		   end
-		end
+	            if (dump_idx == 5'd31) begin
+		            if (cif.dWEN) begin
+		                if (cif.dwait) begin
+			                nds = DUMP;
+		                end
+		                else begin
+			                nds = COUNT;
+		                end
+		            end
+		            else begin
+		                nds = COUNT;
+		            end
+		        end
             end
             COUNT: begin
                 cif.dWEN = 1'b1; 
