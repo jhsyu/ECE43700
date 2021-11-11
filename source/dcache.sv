@@ -173,6 +173,8 @@ module dcache(
         cif.daddr = word_t'(0); 
         cif.dstore = word_t'(0); 
         nxt_dump_idx = dump_idx; 
+        cif.ccwrite = 1'b0; 
+        cif.cctrans = 1'b0; 
         nds = ds; 
         casez(ds)
             IDLE: begin
@@ -203,17 +205,18 @@ module dcache(
                 nds = (cif.dwait) ? INV : IDLE; 
             end
             FWD0: begin
+                cif.cctrans = 1'b1; 
                 cif.dstore = snp_hit_frame.data[0]; 
                 cif.daddr = {snpaddr[31:3], 1'b0, 2'b0};
                 nds = (cif.dwait) ? FWD0 : FWD1; 
             end
             FWD1: begin
-                cif.cctrans = 1'b1; 
                 cif.dstore = snp_hit_frame.data[1]; 
                 cif.daddr = {snpaddr[31:3], 1'b1, 2'b0};
                 nds = (cif.dwait) ? FWD1 : IDLE; 
             end
             ALLOC0: begin
+                cif.cctrans = 1'b1; // i->s, the valid and dirty is set in ALLOC1.
                 cif.ccwrite = dcif.dmemWEN; 
                 cif.dREN = 1'b1; 
                 cif.daddr = {daddr[31:3], 3'b000}; 
@@ -221,12 +224,12 @@ module dcache(
             end
             ALLOC1: begin
                 cif.ccwrite = dcif.dmemWEN; 
-                cif.cctrans = 1'b1; // i->s, the valid and dirty is set in ALLOC1.
                 cif.dREN = 1'b1; 
                 cif.daddr = {daddr[31:3], 3'b100}; 
                 nds = (cif.dwait) ? ALLOC1 : IDLE; 
             end
             WB0: begin
+                cif.cctrans = 1'b1; // S/M->I. both dirty and valid are updated upon finish of wb. 
                 cif.ccwrite = dcif.dmemWEN;  
                 cif.dWEN = 1'b1; 
                 cif.daddr = {set[daddr.idx].frame[evict_id].tag, daddr.idx, 3'b000}; 
@@ -235,7 +238,6 @@ module dcache(
             end
             WB1: begin 
                 cif.ccwrite = dcif.dmemWEN; 
-                cif.cctrans = 1'b1; // S/M->I. both dirty and valid are updated upon finish of wb. 
                 cif.dWEN = 1'b1; 
                 cif.daddr = {set[daddr.idx].frame[evict_id].tag, daddr.idx, 3'b100}; 
                 cif.dstore = set[daddr.idx].frame[evict_id].data[1]; 
@@ -261,6 +263,7 @@ module dcache(
 		        end
             end
             COUNT: begin
+                cif.cctrans = 1'b1; 
                 cif.dWEN = 1'b1; 
                 cif.daddr = word_t'('h3100); 
                 cif.dstore = hit_count; 

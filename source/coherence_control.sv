@@ -3,7 +3,7 @@
 import cpu_types_pkg::*; 
 
 typedef enum logic[4:0] {
-    IDLE, INV,  
+    IDLE, INV1, INV2,  
     SNP1, SNP2, SNP3,		// broadcast the data request and wait for response. 
     WB1, WB2, WB3,			// M->I, no forward, just update memory. 
     LD1, LD2, LD3, LD4,		// also miss in another cache. load from memory.
@@ -71,14 +71,14 @@ module coherence_control (
 		ccif.ccinv = '0; 
 		casez (s)
 			IDLE: begin
-				// nxt_prid = ccif.cctrans[~prid] ? ~prid : prid; 
+				nxt_prid = ccif.cctrans[~prid] | ccif.iREN[~prid] ? ~prid : prid; 
 			    // if both processors assert at the same time, toggle prid
-			    if ((ccif.dREN[0] && ccif.dREN[1]) || (ccif.dWEN[0] && ccif.dWEN[1]) || (ccif.iREN[0] && ccif.iREN[1])) begin
-				    nxt_prid = prid ^ 1'b1;
-				end
-			    else begin
-				    nxt_prid = ccif.cctrans[~prid] ? ~prid : prid;
-				end  
+			    //if ((ccif.dREN[0] && ccif.dREN[1]) || (ccif.dWEN[0] && ccif.dWEN[1]) || (ccif.iREN[0] && ccif.iREN[1])) begin
+				    //nxt_prid = prid ^ 1'b1;
+				//end
+			    //else begin
+					//nxt_prid = ccif.cctrans[~prid] ? ~prid : prid;
+				//end  
 				// check the reason of cctrans. 
 				if (ccif.cctrans[nxt_prid] && ccif.dREN[nxt_prid]) begin
 					nxt_s = SNP1; 
@@ -86,11 +86,11 @@ module coherence_control (
 				else if (ccif.cctrans[nxt_prid] && ccif.dWEN[nxt_prid]) begin
 					nxt_s = WB1;
 				end
-			        else if (ccif.cctrans[nxt_prid] && ccif.iREN[nxt_prid]) begin
-				        nxt_s = IRD;
-				end
 				else if (ccif.cctrans[nxt_prid]) begin
-					nxt_s = INV; 
+					nxt_s = INV1; 
+				end
+			    else if (ccif.iREN[nxt_prid]) begin
+				    nxt_s = IRD;
 				end
 				else begin
 					nxt_s = IDLE; 
@@ -133,11 +133,17 @@ module coherence_control (
 				ccif.dwait = ~(ccif.ramstate == ACCESS); 
 				nxt_s = (ccif.ramstate == ACCESS) ? IDLE : WB3; 
 			end
-			INV: begin
+			INV1: begin
 				// invalidate copy in [~nxt_prid]
 				ccif.ccinv[~prid] = 1'b1; 
 				ccif.dwait[prid] = 1'b1; 
+				nxt_s = INV2; 
+			end
+
+			INV2: begin
+				ccif.dwait[prid] = 1'b0; 
 				nxt_s = IDLE; 
+
 			end
 
 			FWD1: begin
@@ -194,7 +200,7 @@ module coherence_control (
 				ccif.ramaddr = daddr[prid]; 
 				ccif.ramREN = 1'b1;
 				ccif.dload[prid] = ccif.ramload; 
-				ccif.dwait[prid] = (ccif.ramstate == ACCESS);  
+				ccif.dwait[prid] = ~(ccif.ramstate == ACCESS);  
 				nxt_s = (ccif.ramstate == ACCESS) ? LD2 : LD1;
 			end
 
@@ -208,15 +214,15 @@ module coherence_control (
 				ccif.ramaddr = daddr[prid]; 
 				ccif.ramREN = 1'b1;
 				ccif.dload[prid] = ccif.ramload; 
-				ccif.dwait[prid] = (ccif.ramstate == ACCESS);  
+				ccif.dwait[prid] = ~(ccif.ramstate == ACCESS);  
 				nxt_s = (ccif.ramstate == ACCESS) ? IDLE : LD3;
 			end
 
-		        IRD: begin
+		    IRD: begin
 				ccif.ramaddr = iaddr[prid]; 
 				ccif.ramREN = 1'b1;
 				ccif.iload[prid] = ccif.ramload; 
-				ccif.iwait[prid] = (ccif.ramstate == ACCESS);  
+				ccif.iwait[prid] = ~(ccif.ramstate == ACCESS);  
 				nxt_s = (ccif.ramstate == ACCESS) ? IDLE : IRD;
 			end
 		endcase
