@@ -31,7 +31,7 @@ program test(input CLK, output logic nRST);
     parameter PERIOD = 10;
     
     task reset_DUT;
-        dcache_tb.nRST = 1;
+        nRST = 1;
         dcache_tb.dcif.halt = 0;
         dcache_tb.dcif.dmemREN = 0;
         dcache_tb.dcif.dmemWEN = 0;
@@ -44,9 +44,9 @@ program test(input CLK, output logic nRST);
         dcache_tb.cif.ccinv = 0;
         dcache_tb.cif.ccsnoopaddr = 0;
         // reset
-        dcache_tb.nRST = 0;
+        nRST = 0;
         #(PERIOD * 2);
-        dcache_tb.nRST = 1;
+        nRST = 1;
     endtask
     
     initial begin
