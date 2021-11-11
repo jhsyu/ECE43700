@@ -66,7 +66,9 @@ program test;
         dcache_tb.cif.dload = 32'h2;
         wait(dcache_tb.dcif.dhit); 
         assert (dcif.dmemload == 32'h1)
-            else $display("wrong dmemload in testcase %0d", test_case_num);
+            else $display("wrong dmemload in testcase %0d, expecting %8h, receiving %8h", 
+                          test_case_num, 32'h1, dcif.dmemload);
+        #(PERIOD); 
 
         //load from 0x81, HIT
         test_case_num ++; 
@@ -77,8 +79,9 @@ program test;
         #(PERIOD);
         wait(dcache_tb.dcif.dhit); 
         assert (dcif.dmemload == 32'h2)
-            else $display("wrong dmemload in testcase %0d", test_case_num);
-
+            else $display("wrong dmemload in testcase %0d, expecting %8h, receiving %8h", 
+                          test_case_num, 32'h2, dcif.dmemload);
+        #(PERIOD); 
 
 
         //save to 0x80, HIT. 
@@ -98,9 +101,10 @@ program test;
         dcache_tb.dcif.dmemaddr = {26'h80, 3'h0, 1'b0, 2'b00};
         wait(dcache_tb.dcif.dhit); 
         assert (dcif.dmemload == 32'h3)
-            else $display("wrong dmemload in testcase %0d", test_case_num);
+            else $display("wrong dmemload in testcase %0d, expecting %8h, receiving %8h", 
+                          test_case_num, 32'h3, dcif.dmemload);
 
-
+        #(PERIOD); 
         // load from 0x180, MISS
         test_case_num ++; 
         test_case_info = "testcase 4: conpulsory miss (frame[1])"; 
@@ -108,20 +112,22 @@ program test;
         dcache_tb.dcif.dmemWEN = 0;
         dcache_tb.dcif.dmemREN = 1;
         dcache_tb.dcif.dmemaddr = {26'h180, 3'h0, 1'b0, 2'b00};
+        dcache_tb.cif.dwait = 0; 
 
-        wait(dcache_tb.cif.dREN | dcache_tb.cif.dWEN);
+        wait(dcache_tb.cif.dREN);
         @(negedge dcache_tb.clk); 
         dcache_tb.cif.dwait = 0;
         dcache_tb.cif.dload = 32'h4;
         
-        wait(dcache_tb.cif.dREN | dcache_tb.cif.dWEN);
+        wait(dcache_tb.cif.dREN);
         @(negedge dcache_tb.clk); 
         dcache_tb.cif.dwait = 0;
         dcache_tb.cif.dload = 32'h5;
         
         wait(dcache_tb.dcif.dhit); 
         assert (dcif.dmemload == 32'h4)
-            else $display("wrong dmemload in testcase %0d", test_case_num);
+            else $display("wrong dmemload in testcase %0d, expecting %8h, receiving %8h", 
+                          test_case_num, 32'h4, dcif.dmemload);
         #(PERIOD);
 
         // load from 0x280, MISS / check replacement wirte back
@@ -145,7 +151,8 @@ program test;
         dcache_tb.cif.dload = 32'h7;
         wait(dcif.dhit);
         assert (dcif.dmemload == 32'h6)
-            else $display("wrong dmemload in testcase %0d", test_case_num);
+            else $display("wrong dmemload in testcase %0d, expecting %8h, receiving %8h", 
+                          test_case_num, 32'h6, dcif.dmemload);
         @(negedge dcache_tb.clk); 
         dcache_tb.dcif.dmemWEN = 0;
         dcache_tb.dcif.dmemREN = 0;
@@ -160,12 +167,12 @@ program test;
         dcache_tb.dcif.dmemaddr = {26'h380, 3'h2, 1'b1, 2'b00};
         dcache_tb.dcif.dmemstore = 32'hbad1;        
 
-        wait(dcache_tb.cif.dREN | dcache_tb.cif.dWEN);
+        wait(dcache_tb.cif.dREN);
         @(negedge dcache_tb.clk); 
         dcache_tb.cif.dwait = 0;
         dcache_tb.cif.dload = 32'hdead;
         
-        wait(dcache_tb.cif.dREN | dcache_tb.cif.dWEN);
+        wait(dcache_tb.cif.dREN);
         @(negedge dcache_tb.clk); 
         dcache_tb.dcif.dmemaddr = {26'h380, 3'h2, 1'b1, 2'b00};
         dcache_tb.cif.dwait = 0;
@@ -182,7 +189,7 @@ program test;
 
         // HALT check all frames invalid; dirty frames write back
         test_case_num ++; 
-        test_case_info = "testcase 6: halt and writeback"; 
+        test_case_info = "testcase 7: halt and writeback"; 
         dcache_tb.dcif.halt = 1;
         dcache_tb.cif.dwait = 0;
         #(PERIOD * 32);

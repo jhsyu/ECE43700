@@ -14,7 +14,7 @@ module dcache(
     datapath_cache_if.dcache dcif, 
     caches_if.dcache cif 
 );  
-    dcachef_t daddr; 
+    dcachef_t daddr, snpaddr; 
     dcache_line_t [7:0] set; 
     dcache_state_t ds, nds; 
     word_t hit_count; 
@@ -23,21 +23,22 @@ module dcache(
     logic evict_id; 
     logic [4:0] dump_idx, nxt_dump_idx; // 0:blkoff 1:frame [4:2] set
     assign daddr = dcachef_t'(dcif.dmemaddr); 
+    assign snpaddr = dcachef_t'(cif.ccsnoopaddr); 
     assign evict_id = ~set[daddr.idx].lru_id;
     assign dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff];
 
-    logic old_dWEN, old_dREN;
-    always_ff @(posedge CLK, negedge nRST) begin
-       old_dWEN <= cif.dWEN;
-       old_dREN <= cif.dREN;
-    end
-    // output cctrans and ccwrite signals
-    assign cif.cctrans = ((cif.dWEN && ~old_dWEN) || (cif.dREN && ~old_dREN)) ? 1'b1 : 1'b0;
     // check the cache frame and assert dhit.
-    logic dhit;
-    assign dcif.dhit = dhit & hit_frame.valid & (dcif.dmemREN | (dcif.dmemWEN & hit_frame.dirty)); 
+    logic dhit; // raw signal that just determine if the data present in this cache. 
+    assign dcif.dhit = dhit & (dcif.dmemREN | (dcif.dmemWEN & hit_frame.dirty)); 
     // dirty: wait until the content in dcache updated then assert dhit. 
     // the dirty bit will be set only after the invalidation is done. 
+    // 3 cases here:
+    // I->M: dirty 0->1
+    //      need to invalidate possible copies in other cache. 
+    // S->M: dirty 0->1
+    //      need to invalidate possible copies in other cache. 
+    // M->M: dirty 1->1
+    //      since there is no other copies, no need to go inv. 
     always_comb begin
         if (set[daddr.idx].frame[0].valid && 
             set[daddr.idx].frame[0].tag == daddr.tag) begin
@@ -61,18 +62,18 @@ module dcache(
             hit_frame = '0; 
         end
     end
-    logic snp_hit; 
+    logic snp_hit;  // if hit, the snp_hit_frame is always valid. 
     always_comb begin
-        if (set[cif.ccsnoopaddr.idx].frame[0].valid && 
-            set[cif.ccsnoopaddr.idx].frame[0].tag == cif.ccsnoopaddr.tag) begin
+        if (set[snpaddr.idx].frame[0].valid && 
+            set[snpaddr.idx].frame[0].tag == snpaddr.tag) begin
             // snoop hit on frame 0.
             snp_hit = 1'b1;  
             snp_hit_frame_idx = 1'b0; 
             snp_hit_frame = set[daddr.idx].frame[0]; 
         end 
         else if (
-            set[cif.ccsnoopaddr.idx].frame[1].valid && 
-            set[cif.ccsnoopaddr.idx].frame[1].tag == cif.ccsnoopaddr.tag)begin
+            set[snpaddr.idx].frame[1].valid && 
+            set[snpaddr.idx].frame[1].tag == snpaddr.tag)begin
             // snoop hit on frame 1.
             snp_hit = 1'b1; 
             snp_hit_frame_idx = 1'b1; 
@@ -94,21 +95,23 @@ module dcache(
         end
         if ((cif.ccinv | cif.ccwait) & snp_hit) begin
             // invalid the copy of THIS dcache. 
-            set[cif.ccsnoopaddr.idx].frame[snp_hit_frame_idx].valid <= ~cif.ccinv; 
+            set[snpaddr.idx].frame[snp_hit_frame_idx].valid <= ~cif.ccinv; 
             // will be moved to other caches (FWD) or write to mem (FWDWB), or get invalidated. 
-            set[cif.ccsnoopaddr.idx].frame[snp_hit_frame_idx].dirty <= 1'b0; 
+            set[snpaddr.idx].frame[snp_hit_frame_idx].dirty <= 1'b0; 
             // if invalidated., replace this block in the incomming conflict. 
             // if just wait, keep the current case. 
-            set[cif.ccsnoopaddr.idx].lru_id <= (cif.ccinv) ?  ~snp_hit_frame_idx : set[cif.ccsnoopaddr.idx].lru_id; 
+            set[snpaddr.idx].lru_id <= (cif.ccinv) ?  ~snp_hit_frame_idx : set[snpaddr.idx].lru_id; 
             // block the cpu R/W during ccwait.
-            if (cif.ccsnoopaddr.idx == daddr.idx && cif.ccsnoopaddr.tag == daddr.tag) begin
+            if (snpaddr.idx == daddr.idx && snpaddr.tag == daddr.tag) begin
                 // block
             end 
             else begin
-                if (dhit && dcif.dmemREN) begin
+                if (dcif.dhit && dcif.dmemREN) begin
                     set[daddr.idx].lru_id <= hit_frame_idx; 
                 end
-                else if (dhit && dcif.dmemWEN) begin
+                else if (dcif.dhit && dcif.dmemWEN) begin
+                    // if dcif.dhit is set, the state is M->M.
+                    // in other cases, the invalid bit will be set in INV state.  
                     set[daddr.idx].lru_id <= hit_frame_idx; 
                     set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff] <= dcif.dmemstore; 
                     set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
@@ -116,12 +119,12 @@ module dcache(
             end
         end
 
-        else if (dhit & dcif.dmemWEN) begin
+        else if (dcif.dhit & dcif.dmemWEN) begin
             set[daddr.idx].lru_id <= hit_frame_idx; 
             set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff] <= dcif.dmemstore; 
             set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
         end
-        else if (dhit & dcif.dmemREN) begin
+        else if (dcif.dhit & dcif.dmemREN) begin
             // update the lru_id upon a dhit
             set[daddr.idx].lru_id <= hit_frame_idx; 
         end
@@ -138,14 +141,18 @@ module dcache(
             set[daddr.idx].frame[evict_id].dirty      <= 1'b0; 
             set[daddr.idx].frame[evict_id].valid      <= 1'b1; 
         end
-        else if (ds == WB0 & ~cif.dwait) begin
-            set[daddr.idx].frame[evict_id].valid <= 1'b0; 
-        end
         else if (ds == WB1 & ~cif.dwait) begin
+            set[daddr.idx].frame[evict_id].valid <= 1'b0; 
             set[daddr.idx].frame[evict_id].dirty <= 1'b0; 
         end
         else if (ds == INV & ~cif.ccwait & ~cif.dwait) begin
+            // set the dirty bit, assert dcif.dhit
             set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
+        end
+        else if (ds == DUMP & ~cif.ccwait) begin
+            // invalidate the cache that is already write back. 
+            set[dump_idx[4:2]].frame[dump_idx[1]].dirty <= 1'b0; 
+            set[dump_idx[4:2]].frame[dump_idx[1]].valid <= 1'b0; 
         end
     end
     always_ff @(posedge CLK, negedge nRST) begin
@@ -170,31 +177,69 @@ module dcache(
         casez(ds)
             IDLE: begin
                 if(dcif.halt) nds = DUMP; 
+                else if (cif.ccwait && snp_hit && snp_hit_frame.dirty) begin
+                    // if case is FWD, the cpu should be blocked. 
+                    // and the data in the cache should be at M. 
+                    nds = FWD0; 
+                end
+                else if (dcif.dmemWEN && ~cif.ccwait && dhit && ~hit_frame.dirty) begin
+                    // the case is that once writing to a shared block, 
+                    // invalidate other copies in all cache.
+                    // this should be happening before the dcif.dhit.
+                    // at this time dhit is 1'b1, but dcif.dhit is still waiting for dirty bit to set. 
+                    // shared state: valid, ~dirty.
+                    nds = INV; 
+                end
                 else if ((dcif.dmemREN || dcif.dmemWEN) && ~dhit) begin
+                    // ~dhit indicate the incomming request does not appears in the cache. 
+                    // check the victim, if dirty, write back, if vacant, just do the allocate.
                     nds = (set[daddr.idx].frame[evict_id].dirty) ? WB0 : ALLOC0; 
                 end
             end
+            INV: begin
+                cif.cctrans = 1'b1; //I/S->M
+                cif.ccwrite = dcif.dmemWEN; 
+                cif.daddr = {snpaddr[31:3], 1'b0, 2'b0}; 
+                nds = (cif.dwait) ? INV : IDLE; 
+            end
+            FWD0: begin
+                cif.dstore = snp_hit_frame.data[0]; 
+                cif.daddr = {snpaddr[31:3], 1'b0, 2'b0};
+                nds = (cif.dwait) ? FWD0 : FWD1; 
+            end
+            FWD1: begin
+                cif.cctrans = 1'b1; 
+                cif.dstore = snp_hit_frame.data[1]; 
+                cif.daddr = {snpaddr[31:3], 1'b1, 2'b0};
+                nds = (cif.dwait) ? FWD1 : IDLE; 
+            end
             ALLOC0: begin
+                cif.ccwrite = dcif.dmemWEN; 
                 cif.dREN = 1'b1; 
                 cif.daddr = {daddr[31:3], 3'b000}; 
                 nds = (cif.dwait) ? ALLOC0 : ALLOC1; 
             end
             ALLOC1: begin
+                cif.ccwrite = dcif.dmemWEN; 
+                cif.cctrans = 1'b1; // i->s, the valid and dirty is set in ALLOC1.
                 cif.dREN = 1'b1; 
                 cif.daddr = {daddr[31:3], 3'b100}; 
                 nds = (cif.dwait) ? ALLOC1 : IDLE; 
             end
             WB0: begin
+                cif.ccwrite = dcif.dmemWEN;  
                 cif.dWEN = 1'b1; 
                 cif.daddr = {set[daddr.idx].frame[evict_id].tag, daddr.idx, 3'b000}; 
                 cif.dstore = set[daddr.idx].frame[evict_id].data[0]; 
                 nds = (cif.dwait) ? WB0 : WB1; 
             end
-            WB1: begin
+            WB1: begin 
+                cif.ccwrite = dcif.dmemWEN; 
+                cif.cctrans = 1'b1; // S/M->I. both dirty and valid are updated upon finish of wb. 
                 cif.dWEN = 1'b1; 
                 cif.daddr = {set[daddr.idx].frame[evict_id].tag, daddr.idx, 3'b100}; 
                 cif.dstore = set[daddr.idx].frame[evict_id].data[1]; 
-                nds = (cif.dwait) ? WB1 : ALLOC0; 
+                nds = (cif.dwait) ? WB1 : IDLE; 
             end
             DUMP: begin
                 cif.dWEN = set[dump_idx[4:2]].frame[dump_idx[1]].valid & set[dump_idx[4:2]].frame[dump_idx[1]].dirty; 

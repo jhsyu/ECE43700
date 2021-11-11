@@ -2,7 +2,7 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate /dcache_tb/nRST
 add wave -noupdate /dcache_tb/DUT/daddr
-add wave -noupdate /dcache_tb/DUT/set
+add wave -noupdate -expand -subitemconfig {{/dcache_tb/DUT/set[0]} -expand} /dcache_tb/DUT/set
 add wave -noupdate /dcache_tb/DUT/ds
 add wave -noupdate /dcache_tb/DUT/nds
 add wave -noupdate /dcache_tb/DUT/hit_count
@@ -10,12 +10,13 @@ add wave -noupdate /dcache_tb/DUT/hit_frame
 add wave -noupdate /dcache_tb/DUT/evict_id
 add wave -noupdate /dcache_tb/DUT/dump_idx
 add wave -noupdate -radix unsigned /dcache_tb/DUT/nxt_dump_idx
-add wave -noupdate /dcache_tb/DUT/dcif/dhit
 add wave -noupdate -expand -group RAM /dcache_tb/DUT/cif/dload
 add wave -noupdate -expand -group RAM /dcache_tb/DUT/cif/dstore
 add wave -noupdate -expand -group RAM /dcache_tb/DUT/cif/daddr
 add wave -noupdate -expand -group RAM /dcache_tb/DUT/cif/dWEN
 add wave -noupdate -expand -group RAM /dcache_tb/DUT/cif/dREN
+add wave -noupdate /dcache_tb/DUT/dhit
+add wave -noupdate -expand -group Datapath /dcache_tb/DUT/dcif/dhit
 add wave -noupdate -expand -group Datapath /dcache_tb/DUT/dcif/dmemREN
 add wave -noupdate -expand -group Datapath /dcache_tb/DUT/dcif/dmemWEN
 add wave -noupdate -expand -group Datapath /dcache_tb/DUT/dcif/dmemload
@@ -26,7 +27,7 @@ add wave -noupdate /dcache_tb/clk
 add wave -noupdate /dcache_tb/PROG/test_case_num
 add wave -noupdate /dcache_tb/PROG/test_case_info
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {58 ns} 0}
+WaveRestoreCursors {{Cursor 1} {741 ns} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 150
 configure wave -valuecolwidth 100
@@ -42,4 +43,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {43 ns} {156 ns}
+WaveRestoreZoom {618 ns} {805 ns}
