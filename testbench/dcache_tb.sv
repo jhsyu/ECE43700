@@ -16,13 +16,13 @@ module dcache_tb;
     caches_if cif ();
     datapath_cache_if dcif ();
     // test program setup
-    test PROG ();
+    test PROG (clk, nRST);
 
     dcache DUT(clk, nRST, dcif, cif);
 
 endmodule
 
-program test;
+program test(input CLK, output logic nRST);
 
     import cpu_types_pkg::*;
 
@@ -99,7 +99,8 @@ program test;
         @(negedge dcache_tb.clk); 
         dcache_tb.dcif.dmemREN = 1;
         dcache_tb.dcif.dmemaddr = {26'h80, 3'h0, 1'b0, 2'b00};
-        wait(dcache_tb.dcif.dhit); 
+        wait(dcache_tb.dcif.dhit);
+        @(posedge CLK);
         assert (dcif.dmemload == 32'h3)
             else $display("wrong dmemload in testcase %0d, expecting %8h, receiving %8h", 
                           test_case_num, 32'h3, dcif.dmemload);
@@ -150,9 +151,9 @@ program test;
         dcache_tb.cif.dwait = 0;
         dcache_tb.cif.dload = 32'h7;
         wait(dcif.dhit);
-        assert (dcif.dmemload == 32'h6)
+        assert (dcif.dmemload == 32'h7)
             else $display("wrong dmemload in testcase %0d, expecting %8h, receiving %8h", 
-                          test_case_num, 32'h6, dcif.dmemload);
+                          test_case_num, 32'h7, dcif.dmemload);
         @(negedge dcache_tb.clk); 
         dcache_tb.dcif.dmemWEN = 0;
         dcache_tb.dcif.dmemREN = 0;
@@ -177,19 +178,53 @@ program test;
         dcache_tb.dcif.dmemaddr = {26'h380, 3'h2, 1'b1, 2'b00};
         dcache_tb.cif.dwait = 0;
         dcache_tb.cif.dload = 32'hbeef;
-
-        wait(dcif.dhit); 
-        
+        wait(dcif.dhit);
+        dcache_tb.cif.dwait = 1'b1; 
         #(PERIOD);
 
-        
+        test_case_info = "testcase 7: forwarding"; 
+        test_case_num++;
+        @(negedge dcache_tb.clk);
+        dcache_tb.cif.ccsnoopaddr = {26'h380, 3'h2, 1'b1, 2'b00};
+        dcache_tb.cif.ccwait = 1'b1;
+        #(PERIOD);
+        dcache_tb.cif.dwait = 1'b0;
+        assert (dcache_tb.cif.daddr == 32'h0000e010)
+            else $display("wrong daddr in testcase %0d, expecting %8h, receiving %8h", 
+                          test_case_num, 32'h0000e010, dcache_tb.cif.daddr);
+        #(PERIOD);
+        dcache_tb.cif.dwait = 1'b1; 
+        #(PERIOD);
+        dcache_tb.cif.dwait = 1'b0;
+        assert (dcache_tb.cif.daddr == 32'h0000e014)
+            else $display("wrong daddr in testcase %0d, expecting %8h, receiving %8h", 
+                          test_case_num, 32'h0000e014, dcache_tb.cif.daddr);
+        #(PERIOD);
+        dcache_tb.cif.dwait = 1'b1; 
+        #(PERIOD);
+
+        test_case_info = "testcase 8: invalidating"; 
+        test_case_num++;
+        @(negedge dcache_tb.clk);
+        dcache_tb.cif.ccsnoopaddr = {26'h180, 3'h2, 1'b1, 2'b00};
+        dcache_tb.cif.ccwait = 1'b0; 
+        #(PERIOD);
+        assert (dcache_tb.cif.daddr == 32'h00006010)
+            else $display("wrong daddr in testcase %0d, expecting %8h, receiving %8h", 
+                          test_case_num, 32'h0006010, dcache_tb.cif.daddr);
+        #(PERIOD);
+        dcache_tb.cif.dwait = 1'b0; 
+	#(PERIOD);
+        dcache_tb.cif.dwait = 1'b1; 
+	#(PERIOD);
+       
         //check hit counter = ?
         #(PERIOD);
         #(PERIOD);
 
         // HALT check all frames invalid; dirty frames write back
         test_case_num ++; 
-        test_case_info = "testcase 7: halt and writeback"; 
+        test_case_info = "testcase 9: halt and writeback"; 
         dcache_tb.dcif.halt = 1;
         dcache_tb.cif.dwait = 0;
         #(PERIOD * 32);
