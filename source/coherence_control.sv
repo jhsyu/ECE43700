@@ -38,7 +38,7 @@ module coherence_control (
 	// latch the signals potentially change during the cycle. 
 	always_ff @(posedge CLK) begin
 		daddr <= ccif.daddr;
-	        iaddr <= ccif.iaddr; 
+	    iaddr <= ccif.iaddr; 
 		dstore <= ccif.dstore; 
 		ramstate <= ccif.ramstate;
 	end
@@ -60,9 +60,9 @@ module coherence_control (
 		nxt_s = s; 
 		// output
 		ccif.dwait = '1; 
-	        ccif.iwait = '1; 
+	    ccif.iwait = '1; 
 		ccif.dload = '0; 
-	        ccif.iload = '0; 
+	    ccif.iload = '0; 
 		ccif.ramstore = '0; 
 		ccif.ramaddr = '0; 
 		ccif.ramWEN = '0; 
@@ -72,12 +72,12 @@ module coherence_control (
 		casez (s)
 			IDLE: begin
 				// nxt_prid = ccif.cctrans[~prid] ? ~prid : prid; 
-			        // if both processors assert at the same time, toggle prid
-			        if ((ccif.dREN[0] && ccif.dREN[1]) || (ccif.dWEN[0] && ccif.dWEN[1]) || (ccif.iREN[0] && ccif.iREN[1])) begin
-				        nxt_prid = prid ^ 1'b1;
+			    // if both processors assert at the same time, toggle prid
+			    if ((ccif.dREN[0] && ccif.dREN[1]) || (ccif.dWEN[0] && ccif.dWEN[1]) || (ccif.iREN[0] && ccif.iREN[1])) begin
+				    nxt_prid = prid ^ 1'b1;
 				end
-			        else begin
-				        nxt_prid = ccif.cctrans[~prid] ? ~prid : prid;
+			    else begin
+				    nxt_prid = ccif.cctrans[~prid] ? ~prid : prid;
 				end  
 				// check the reason of cctrans. 
 				if (ccif.cctrans[nxt_prid] && ccif.dREN[nxt_prid]) begin
