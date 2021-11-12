@@ -254,11 +254,11 @@ module dcache(
 			                nds = DUMP;
 		                end
 		                else begin
-			                nds = COUNT;
+			            nds = CLEAN; //COUNT;
 		                end
 		            end
 		            else begin
-		                nds = COUNT;
+		                nds = CLEAN; //COUNT;
 		            end
 		        end
             end
