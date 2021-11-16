@@ -53,7 +53,8 @@ module coherence_control (
 			s <= nxt_s; 
 		end
 	end
-	assign ccif.ccsnoopaddr = {daddr[1], daddr[0]}; 
+	assign ccif.ccsnoopaddr[0] = daddr[1]; 
+	assign ccif.ccsnoopaddr[1] = daddr[0]; 
 	always_comb begin
 		nxt_prid = prid; 
 		// prid is the id of the processor we are serving now. 

@@ -264,6 +264,9 @@ module datapath (
   assign forwardA = fwif.forwardA;
   assign forwardB = fwif.forwardB; 
 
+  opcode_t mem_opcode; 
+  assign mem_opcode = opcode_t'(rif.ex_mem_out.imemload[31:26]);   
+
   // register file.
   register_file rf(.CLK(CLK), .nRST(nRST), .rfif(rfif)); 
   // alu. 

@@ -64,20 +64,17 @@ module dcache(
     end
     logic snp_hit;  // if hit, the snp_hit_frame is always valid. 
     always_comb begin
-        if (set[snpaddr.idx].frame[0].valid && 
-            set[snpaddr.idx].frame[0].tag == snpaddr.tag) begin
+        if (set[snpaddr.idx].frame[0].tag == snpaddr.tag) begin
             // snoop hit on frame 0.
             snp_hit = 1'b1;  
             snp_hit_frame_idx = 1'b0; 
-            snp_hit_frame = set[daddr.idx].frame[0]; 
+            snp_hit_frame = set[snpaddr.idx].frame[0]; 
         end 
-        else if (
-            set[snpaddr.idx].frame[1].valid && 
-            set[snpaddr.idx].frame[1].tag == snpaddr.tag)begin
+        else if (set[snpaddr.idx].frame[1].tag == snpaddr.tag)begin
             // snoop hit on frame 1.
             snp_hit = 1'b1; 
             snp_hit_frame_idx = 1'b1; 
-            snp_hit_frame = set[daddr.idx].frame[1]; 
+            snp_hit_frame = set[snpaddr.idx].frame[1]; 
         end
         else begin
             // miss. 
@@ -93,7 +90,7 @@ module dcache(
         if (~nRST) begin
             set <= '0; 
         end
-        if ((cif.ccinv | cif.ccwait) & snp_hit) begin
+        else if ((cif.ccinv | cif.ccwait) & snp_hit) begin
             // invalid the copy of THIS dcache. 
             set[snpaddr.idx].frame[snp_hit_frame_idx].valid <= ~cif.ccinv; 
             // will be moved to other caches (FWD) or write to mem (FWDWB), or get invalidated. 
@@ -149,7 +146,7 @@ module dcache(
             // set the dirty bit, assert dcif.dhit
             set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
         end
-        else if (ds == DUMP & ~cif.ccwait) begin
+        else if (ds == DUMP & ~cif.ccwait & ~cif.dwait) begin
             // invalidate the cache that is already write back. 
             set[dump_idx[4:2]].frame[dump_idx[1]].dirty <= 1'b0; 
             set[dump_idx[4:2]].frame[dump_idx[1]].valid <= 1'b0; 
@@ -192,7 +189,7 @@ module dcache(
                     // shared state: valid, ~dirty.
                     nds = INV; 
                 end
-                else if ((dcif.dmemREN || dcif.dmemWEN) && ~dhit) begin
+                else if ((dcif.dmemREN || dcif.dmemWEN) && ~dhit && ~cif.ccwait) begin
                     // ~dhit indicate the incomming request does not appears in the cache. 
                     // check the victim, if dirty, write back, if vacant, just do the allocate.
                     nds = (set[daddr.idx].frame[evict_id].dirty) ? WB0 : ALLOC0; 
@@ -244,6 +241,7 @@ module dcache(
                 nds = (cif.dwait) ? WB1 : IDLE; 
             end
             DUMP: begin
+                cif.cctrans = 1'b1; 
                 cif.dWEN = set[dump_idx[4:2]].frame[dump_idx[1]].valid & set[dump_idx[4:2]].frame[dump_idx[1]].dirty; 
                 cif.daddr = {set[dump_idx[4:2]].frame[dump_idx[1]].tag, dump_idx[4:2], dump_idx[0], 2'b0}; 
                 cif.dstore = set[dump_idx[4:2]].frame[dump_idx[1]].data[dump_idx[0]];
@@ -276,16 +274,16 @@ module dcache(
         endcase
     end
 
-    always_ff @(posedge CLK, negedge nRST) begin
-        if (~nRST) begin
-            hit_count <= '0; 
-        end
-        else if ((ds == IDLE) && dhit && (dcif.dmemWEN || dcif.dmemREN)) begin
-            hit_count <= hit_count + 1; 
-        end
-        else if ((ds == ALLOC1) && (~cif.dwait)) begin
-            hit_count <= hit_count - 1; 
-        end
-    end
+    //always_ff @(posedge CLK, negedge nRST) begin
+    //    if (~nRST) begin
+    //        hit_count <= '0; 
+    //    end
+    //    else if ((ds == IDLE) && dhit && (dcif.dmemWEN || dcif.dmemREN)) begin
+    //        hit_count <= hit_count + 1; 
+    //    end
+    //    else if ((ds == ALLOC1) && (~cif.dwait)) begin
+    //        hit_count <= hit_count - 1; 
+    //    end
+    //end
 
 endmodule
