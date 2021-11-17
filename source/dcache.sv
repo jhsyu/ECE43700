@@ -64,13 +64,15 @@ module dcache(
     end
     logic snp_hit;  // if hit, the snp_hit_frame is always valid. 
     always_comb begin
-        if (set[snpaddr.idx].frame[0].tag == snpaddr.tag) begin
+        if (set[snpaddr.idx].frame[0].valid && 
+            set[snpaddr.idx].frame[0].tag == snpaddr.tag) begin
             // snoop hit on frame 0.
             snp_hit = 1'b1;  
             snp_hit_frame_idx = 1'b0; 
             snp_hit_frame = set[snpaddr.idx].frame[0]; 
         end 
-        else if (set[snpaddr.idx].frame[1].tag == snpaddr.tag)begin
+        else if (set[snpaddr.idx].frame[0].valid && 
+            set[snpaddr.idx].frame[1].tag == snpaddr.tag)begin
             // snoop hit on frame 1.
             snp_hit = 1'b1; 
             snp_hit_frame_idx = 1'b1; 
@@ -152,6 +154,7 @@ module dcache(
             set[dump_idx[4:2]].frame[dump_idx[1]].valid <= 1'b0; 
         end
     end
+    logic dumping; 
     always_ff @(posedge CLK, negedge nRST) begin
         if (~nRST) begin
             ds          <= IDLE; 
@@ -159,7 +162,9 @@ module dcache(
         end
         else begin 
             ds          <= nds;
-            dump_idx    <= nxt_dump_idx; 
+            if (dumping) begin
+                dump_idx    <= nxt_dump_idx; 
+            end
         end
     end
     // next state and output logic. 
@@ -173,6 +178,7 @@ module dcache(
         cif.ccwrite = 1'b0; 
         cif.cctrans = 1'b0; 
         nds = ds; 
+        dumping = 1'b0; 
         casez(ds)
             IDLE: begin
                 if(dcif.halt) nds = DUMP; 
@@ -198,7 +204,7 @@ module dcache(
             INV: begin
                 cif.cctrans = 1'b1; //I/S->M
                 cif.ccwrite = dcif.dmemWEN; 
-                cif.daddr = {snpaddr[31:3], 1'b0, 2'b0}; 
+                cif.daddr = {daddr[31:3], 1'b0, 2'b0}; 
                 nds = (cif.dwait) ? INV : IDLE; 
             end
             FWD0: begin
@@ -241,24 +247,19 @@ module dcache(
                 nds = (cif.dwait) ? WB1 : IDLE; 
             end
             DUMP: begin
-                cif.cctrans = 1'b1; 
-                cif.dWEN = set[dump_idx[4:2]].frame[dump_idx[1]].valid & set[dump_idx[4:2]].frame[dump_idx[1]].dirty; 
-                cif.daddr = {set[dump_idx[4:2]].frame[dump_idx[1]].tag, dump_idx[4:2], dump_idx[0], 2'b0}; 
-                cif.dstore = set[dump_idx[4:2]].frame[dump_idx[1]].data[dump_idx[0]];
-                nxt_dump_idx = (~cif.dWEN || ~cif.dwait) ? dump_idx + 1 : dump_idx;
-	            if (dump_idx == 5'd31) begin
-		            if (cif.dWEN) begin
-		                if (cif.dwait) begin
-			                nds = DUMP;
-		                end
-		                else begin
-			            nds = CLEAN; //COUNT;
-		                end
-		            end
-		            else begin
-		                nds = CLEAN; //COUNT;
-		            end
+                if (cif.ccwait & snp_hit & snp_hit_frame.valid & snp_hit_frame.dirty) begin
+                    nds = FWD0; 
+                end
+                else begin
+                    dumping = 1'b1; 
+                    cif.cctrans = set[dump_idx[4:2]].frame[dump_idx[1]].valid & set[dump_idx[4:2]].frame[dump_idx[1]].dirty; 
+                    cif.dWEN = set[dump_idx[4:2]].frame[dump_idx[1]].valid & set[dump_idx[4:2]].frame[dump_idx[1]].dirty; 
+                    cif.daddr = {set[dump_idx[4:2]].frame[dump_idx[1]].tag, dump_idx[4:2], dump_idx[0], 2'b0}; 
+                    cif.dstore = set[dump_idx[4:2]].frame[dump_idx[1]].data[dump_idx[0]];
+                    nxt_dump_idx = (~cif.dWEN || ~cif.dwait) ? dump_idx + 1 : dump_idx;
+                    nds = (dump_idx < 31) ? DUMP : CLEAN; 
 		        end
+                    
             end
             COUNT: begin
                 cif.cctrans = 1'b1; 
