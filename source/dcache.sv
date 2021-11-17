@@ -71,7 +71,7 @@ module dcache(
             snp_hit_frame_idx = 1'b0; 
             snp_hit_frame = set[snpaddr.idx].frame[0]; 
         end 
-        else if (set[snpaddr.idx].frame[0].valid && 
+        else if (set[snpaddr.idx].frame[1].valid && 
             set[snpaddr.idx].frame[1].tag == snpaddr.tag)begin
             // snoop hit on frame 1.
             snp_hit = 1'b1; 
@@ -148,7 +148,7 @@ module dcache(
             // set the dirty bit, assert dcif.dhit
             set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
         end
-        else if (ds == DUMP & ~cif.ccwait & ~cif.dwait) begin
+        else if (ds == FLUSH0 & ~cif.ccwait & ~cif.dwait) begin
             // invalidate the cache that is already write back. 
             set[dump_idx[4:2]].frame[dump_idx[1]].dirty <= 1'b0; 
             set[dump_idx[4:2]].frame[dump_idx[1]].valid <= 1'b0; 
@@ -181,7 +181,7 @@ module dcache(
         dumping = 1'b0; 
         casez(ds)
             IDLE: begin
-                if(dcif.halt) nds = DUMP; 
+                if(dcif.halt) nds = FLUSH0; 
                 else if (cif.ccwait && snp_hit && snp_hit_frame.dirty) begin
                     // if case is FWD, the cpu should be blocked. 
                     // and the data in the cache should be at M. 
@@ -246,21 +246,49 @@ module dcache(
                 cif.dstore = set[daddr.idx].frame[evict_id].data[1]; 
                 nds = (cif.dwait) ? WB1 : IDLE; 
             end
-            DUMP: begin
+            FLUSH0: begin
                 if (cif.ccwait & snp_hit & snp_hit_frame.valid & snp_hit_frame.dirty) begin
                     nds = FWD0; 
                 end
                 else begin
                     dumping = 1'b1; 
-                    cif.cctrans = set[dump_idx[4:2]].frame[dump_idx[1]].valid & set[dump_idx[4:2]].frame[dump_idx[1]].dirty; 
-                    cif.dWEN = set[dump_idx[4:2]].frame[dump_idx[1]].valid & set[dump_idx[4:2]].frame[dump_idx[1]].dirty; 
-                    cif.daddr = {set[dump_idx[4:2]].frame[dump_idx[1]].tag, dump_idx[4:2], dump_idx[0], 2'b0}; 
-                    cif.dstore = set[dump_idx[4:2]].frame[dump_idx[1]].data[dump_idx[0]];
-                    nxt_dump_idx = (~cif.dWEN || ~cif.dwait) ? dump_idx + 1 : dump_idx;
-                    nds = (dump_idx < 31) ? DUMP : CLEAN; 
+                    if (set[dump_idx[4:2]].frame[dump_idx[1]].valid & set[dump_idx[4:2]].frame[dump_idx[1]].dirty) begin
+                        cif.cctrans = 1'b1; 
+                        cif.dWEN = 1'b1; 
+                        cif.daddr = {set[dump_idx[4:2]].frame[dump_idx[1]].tag, dump_idx[4:2], dump_idx[0], 2'b0}; 
+                        cif.dstore = set[dump_idx[4:2]].frame[dump_idx[1]].data[dump_idx[0]];
+                        nxt_dump_idx = (cif.dwait) ? dump_idx : dump_idx + 1;
+                        nds = (cif.dwait) ? FLUSH0 : FLUSH1; 
+                    end
+                    else begin
+                        cif.cctrans = 1'b0; 
+                        cif.dWEN = 1'b0; 
+                        cif.daddr = '0; 
+                        cif.dstore = 'hBAD1BAD1;
+                        nxt_dump_idx = dump_idx + 1;
+                        nds = (dump_idx < 31) ? FLUSH0 : CLEAN; 
+                    end
 		        end
                     
             end
+            FLUSH1: begin
+                dumping = 1'b1; 
+                cif.dWEN = 1'b1; 
+                cif.daddr = {set[dump_idx[4:2]].frame[dump_idx[1]].tag, dump_idx[4:2], dump_idx[0], 2'b0}; 
+                cif.dstore = set[dump_idx[4:2]].frame[dump_idx[1]].data[dump_idx[0]];
+                nxt_dump_idx = (cif.dwait) ? dump_idx : dump_idx + 1;
+                if (cif.dwait) begin
+                    nds = FLUSH1;
+                end
+                else if (dump_idx < 31) begin
+                    nds = FLUSH0; 
+                end
+                else begin
+                    nds = CLEAN; 
+                end
+
+            end
+            
             COUNT: begin
                 cif.cctrans = 1'b1; 
                 cif.dWEN = 1'b1; 

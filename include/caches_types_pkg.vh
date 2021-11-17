@@ -7,7 +7,7 @@ package caches_types_pkg;
     import cpu_types_pkg::*;
 
     typedef enum logic[3:0] {  
-      IDLE, ALLOC0, ALLOC1, WB0, WB1, DUMP, COUNT, CLEAN, FWD0, FWD1, INV  
+      IDLE, ALLOC0, ALLOC1, WB0, WB1, FLUSH0, FLUSH1, COUNT, CLEAN, FWD0, FWD1, INV  
     } dcache_state_t;
 
     typedef struct packed {

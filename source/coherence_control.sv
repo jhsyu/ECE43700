@@ -45,7 +45,7 @@ module coherence_control (
 
 	always_ff @(posedge CLK, negedge nRST) begin
 		if (~nRST) begin
-			prid <= 0; 
+			prid <= 1; 
 			s <= IDLE; 
 		end
 		else begin
@@ -153,10 +153,15 @@ module coherence_control (
 			end
 
 			FWD3: begin
-				nxt_s = IDLE; 
 				ccif.dload[prid] = dstore[~prid]; 
 				ccif.dwait[prid] = 1'b0; 
 				ccif.dwait[~prid] = 1'b0; 
+				if (ccif.ccwrite[prid]) begin
+					nxt_s = INV1; 
+				end
+				else begin
+					nxt_s = IDLE;
+				end 
 			end
 
 			FWDWB1: begin
@@ -209,7 +214,12 @@ module coherence_control (
 				ccif.ramREN = 1'b1;
 				ccif.dload[prid] = ccif.ramload; 
 				ccif.dwait[prid] = ~(ccif.ramstate == ACCESS);  
-				nxt_s = (ccif.ramstate == ACCESS) ? IDLE : LD3;
+				if (ccif.ccwrite[prid]) begin
+					nxt_s = (ccif.ramstate == ACCESS) ? INV1 : LD3;
+				end
+				else begin
+					nxt_s = (ccif.ramstate == ACCESS) ? IDLE : LD3;
+				end
 			end
 
 		    IRD: begin
