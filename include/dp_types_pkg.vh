@@ -58,6 +58,7 @@ package dp_types_pkg;
        logic dREN, dWEN;
        alusrc_t alusrc;
        aluop_t aluop;
+       logic datomic; 
 	} id_ex_t;
 
     typedef struct packed {
@@ -73,6 +74,7 @@ package dp_types_pkg;
        logic regWEN;
        logic dREN, dWEN;
        logic zero;
+       logic datomic;
 	} ex_mem_t;
 
     typedef struct packed {
@@ -87,6 +89,7 @@ package dp_types_pkg;
        word_t imm32;
        // signals for cpu tracker. 
        word_t baddr, rdat2; 
+       logic datomic; 
 	} mem_wb_t;
 
     typedef enum logic[1:0]{

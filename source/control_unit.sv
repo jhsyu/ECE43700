@@ -22,6 +22,7 @@ module control_unit (
         cuif.aluop = ALU_SLL; 
         cuif.halt = 1'b0; 
         cuif.pcsrc = PCSRC_PC4;
+        cuif.datomic = 1'b0; 
         casez (cuif.opcode)
             RTYPE: begin
                 cuif.regsrc = REGSRC_ALU; 
@@ -126,6 +127,23 @@ module control_unit (
             end
             J: begin
                 cuif.pcsrc = PCSRC_JAL; 
+            end
+            LL: begin
+                cuif.regsrc = REGSRC_MEM; 
+                cuif.regdst = REGDST_RT; 
+                cuif.regWEN = 1'b1; // dhit 
+                cuif.alusrc = ALUSRC_IMM; 
+                cuif.extsel = SIGN_EXT;
+                cuif.dREN = 1'b1;   // ihit 
+                cuif.aluop = ALU_ADD; 
+                cuif.datomic = 1'b1; 
+            end
+            SC: begin
+                cuif.alusrc = ALUSRC_IMM; 
+                cuif.extsel = SIGN_EXT;
+                cuif.dWEN = 1'b1; 
+                cuif.aluop = ALU_ADD; 
+                cuif.datomic = 1'b1; 
             end
             HALT: begin
                 cuif.halt = 1'b1; 

@@ -19,6 +19,7 @@ interface control_unit_if;
     aluop_t aluop; 
     logic zero; 
     pcsrc_t pcsrc;
+    logic datomic; 
 
     modport cu (
         input   opcode, funct,
@@ -26,7 +27,8 @@ interface control_unit_if;
                 regsrc, regdst, regWEN, pcsrc,
                 extsel, 
                 alusrc, 
-                dREN, dWEN
+                dREN, dWEN, 
+                datomic
     ); 
 
     modport tb (
@@ -35,7 +37,8 @@ interface control_unit_if;
                 regsrc, regdst, regWEN, pcsrc,
                 extsel, 
                 alusrc, 
-                dREN, dWEN
+                dREN, dWEN, 
+                datomic
     ); 
 endinterface
 `endif 

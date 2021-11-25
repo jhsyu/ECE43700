@@ -134,6 +134,7 @@ module datapath (
   assign rif.id_ex_in.aluop = cuif.aluop;
   assign rif.id_ex_in.pcsrc = cuif.pcsrc; 
   assign rif.id_ex_in.npc = rif.if_id_out.npc;  
+  assign rif.id_ex_in.datomic = cuif.datomic; 
 
   // EX stage. 
   // ALU input. 
@@ -170,6 +171,7 @@ module datapath (
   assign rif.ex_mem_in.pcsrc = rif.id_ex_out.pcsrc;
   assign rif.ex_mem_in.npc = rif.id_ex_out.npc;
   assign rif.ex_mem_in.rdat2_fwd = rdat2_fwd;
+  assign rif.ex_mem_in.datomic = rif.id_ex_out.datomic; 
 
   // PC
 
@@ -203,6 +205,7 @@ module datapath (
   assign rif.mem_wb_in.pc4 = rif.ex_mem_out.pc4; 
   assign rif.mem_wb_in.pc = rif.ex_mem_out.pc;
   assign rif.mem_wb_in.npc = rif.ex_mem_out.npc; 
+  assign rif.mem_wb_in.datomic = rif.ex_mem_out.datomic; 
 
   // datapath cache interface connections. 
 
@@ -210,6 +213,7 @@ module datapath (
   assign dpif.dmemWEN = rif.ex_mem_out.dWEN;
   assign dpif.dmemaddr = rif.ex_mem_out.alu_out; 
   assign dpif.dmemstore = rif.ex_mem_out.rdat2_fwd;
+  assign dpif.datomic = rif.ex_mem_out.datomic; 
 
   always_ff @(posedge CLK, negedge nRST) begin
     if (~nRST) begin
