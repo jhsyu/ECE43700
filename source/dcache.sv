@@ -17,7 +17,7 @@ module dcache(
     dcachef_t daddr, snpaddr; 
     dcache_line_t [7:0] set; 
     dcache_state_t ds, nds; 
-    word_t hit_count, link_reg, nxt_link_reg; 
+    word_t hit_count, link_reg; 
     logic hit_frame_idx, snp_hit_frame_idx;
     dcache_frame hit_frame, snp_hit_frame;  
     logic evict_id; 
@@ -28,7 +28,7 @@ module dcache(
     always_comb begin
         dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff]; 
         if (dcif.dmemWEN && dcif.datomic) begin // if SC
-            dcif.dmemload = (dcif.dmemaddr == link_reg) ? 1'b1 : 1'b0; 
+            dcif.dmemload = (dcif.dmemaddr == link_reg) ? 32'b1 : 32'b0; 
         end
     end
     //assign dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff];
@@ -97,6 +97,7 @@ module dcache(
     always_ff @(posedge CLK or negedge nRST) begin
         if (~nRST) begin
             set <= '0; 
+            link_reg <= '0; 
         end
         else if ((cif.ccinv | cif.ccwait) & snp_hit) begin
             // invalid the copy of THIS dcache. 
@@ -165,11 +166,9 @@ module dcache(
         if (~nRST) begin
             ds          <= IDLE; 
             dump_idx    <= '0; 
-            link_reg    <= '0; 
         end
         else begin 
             ds          <= nds;
-            link_reg    <= nxt_link_reg; 
             if (dumping) begin
                 dump_idx    <= nxt_dump_idx; 
             end
@@ -310,17 +309,5 @@ module dcache(
             end
         endcase
     end
-
-    //always_ff @(posedge CLK, negedge nRST) begin
-    //    if (~nRST) begin
-    //        hit_count <= '0; 
-    //    end
-    //    else if ((ds == IDLE) && dhit && (dcif.dmemWEN || dcif.dmemREN)) begin
-    //        hit_count <= hit_count + 1; 
-    //    end
-    //    else if ((ds == ALLOC1) && (~cif.dwait)) begin
-    //        hit_count <= hit_count - 1; 
-    //    end
-    //end
 
 endmodule
