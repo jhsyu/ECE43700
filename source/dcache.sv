@@ -17,7 +17,7 @@ module dcache(
     dcachef_t daddr, snpaddr; 
     dcache_line_t [7:0] set; 
     dcache_state_t ds, nds; 
-    word_t hit_count; 
+    word_t hit_count, link_reg, nxt_link_reg; 
     logic hit_frame_idx, snp_hit_frame_idx;
     dcache_frame hit_frame, snp_hit_frame;  
     logic evict_id; 
@@ -159,9 +159,11 @@ module dcache(
         if (~nRST) begin
             ds          <= IDLE; 
             dump_idx    <= '0; 
+            link_reg    <= '0; 
         end
         else begin 
             ds          <= nds;
+            link_reg    <= nxt_link_reg; 
             if (dumping) begin
                 dump_idx    <= nxt_dump_idx; 
             end
