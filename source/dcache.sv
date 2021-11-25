@@ -25,7 +25,13 @@ module dcache(
     assign daddr = dcachef_t'(dcif.dmemaddr); 
     assign snpaddr = dcachef_t'(cif.ccsnoopaddr); 
     assign evict_id = ~set[daddr.idx].lru_id;
-    assign dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff];
+    always_comb begin
+        dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff]; 
+        if (dcif.dmemWEN && dcif.datomic) begin // if SC
+            dcif.dmemload = (dcif.dmemaddr == link_reg) ? 1'b1 : 1'b0; 
+        end
+    end
+    //assign dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff];
 
     // check the cache frame and assert dhit.
     logic dhit; // raw signal that just determine if the data present in this cache. 
