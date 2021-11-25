@@ -48,7 +48,11 @@ module datapath (
 
   // signal for stalling until dhit for lw and sw
   logic mem_op_stall;
-  assign mem_op_stall = (((opcode_t'(rif.ex_mem_out.imemload[31:26]) == SW) || (opcode_t'(rif.ex_mem_out.imemload[31:26]) == LW)) && ~dpif.dhit); 
+  //assign mem_op_stall = (((opcode_t'(rif.ex_mem_out.imemload[31:26]) == SW) || (opcode_t'(rif.ex_mem_out.imemload[31:26]) == LW)) && ~dpif.dhit); 
+  assign mem_op_stall = (((opcode_t'(rif.ex_mem_out.imemload[31:26]) == SW) ||
+                          (opcode_t'(rif.ex_mem_out.imemload[31:26]) == LW) ||
+                          (opcode_t'(rif.ex_mem_out.imemload[31:26]) == SC) ||
+                          (opcode_t'(rif.ex_mem_out.imemload[31:26]) == LL)) && ~dpif.dhit); 
 
   // forwarding unit.
   forwarding fwding (.fwif(fwif));
