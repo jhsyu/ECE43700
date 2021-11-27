@@ -8,12 +8,13 @@
 #----------------------------------------------------------
   org   0x0000              # first processor p0
   ori   $sp, $zero, 0x3ffc  # stack
-  ori   $s0, $zero, 0x1234  # seed
+  lui   $s0, 0x1234         # load upper 16 bits of seed
+  ori   $s0, $s0, 0x1234    # load lower 16 bits of seed
   ori   $s1, $zero, 0x0
   jal   mainp0              # go to program
   halt
 
-#-max (a0=a,a1=b) returns v0=max(a,b)--------------
+#-max (a0=a,a1=b) returns v0=max(a,b)----------------------
 max:
   #push  $ra
   #push  $a0
@@ -77,10 +78,10 @@ minrtn:
   addiu $sp, $sp, 4
 
   jr    $ra
-#--------------------------------------------------
+#----------------------------------------------------------
 
 	
-#------------------------------------------------------
+#----------------------------------------------------------
 # $v0 = crc32($a0)
 crc32:
   lui $t1, 0x04C1
@@ -104,9 +105,10 @@ ls3:
 ls2:
   or $v0, $a0, $0
   jr $ra
-#------------------------------------------------------
+#----------------------------------------------------------
 
-
+	
+#----------------------------------------------------------
 # pass in an address to lock function in argument register 0
 # returns when lock is available
 lock:
@@ -117,33 +119,37 @@ aquire:
   sc    $t0, 0($a0)
   beq   $t0, $0, lock       # if sc failed retry
   jr    $ra
+#----------------------------------------------------------
 
 
+#----------------------------------------------------------
 # pass in an address to unlock function in argument register 0
 # returns when lock is free
 unlock:
   sw    $0, 0($a0)
   jr    $ra
+#----------------------------------------------------------
+
 
 # PRODUCER (PROCESSOR 0)
 mainp0:
-  #push  $ra                 # save return address
+  #push  $ra
   addiu $sp, $sp, -4
   sw    $ra, 0($sp)
 
   ori   $a0, $zero, l1      # move lock to arguement register
   jal   lock                # try to aquire the lock
   # critical code segment
-  ori   $t5, $zero, 2
+  ori   $t5, $zero, 2       # left shift to multiply by 4
   ori   $t2, $zero, buff_occ
   ori   $t3, $zero, buffer
-  lw    $t0, 0($t2)
-  addiu $t4, $t0, 1
+  lw    $t0, 0($t2)         # load buffer occupancy value
+  addiu $t4, $t0, 1         # increment buffer occupancy
   sllv  $t1, $t5, $t0       # shift buff_occ left by 2
-  ori   $t5, $zero, 256      # change to 256 later
-  beq   $s1, $t5, EXIT0
-  beq   $t0, $t5, EXIT0     # if buff_occ == 10, exit loop
-  addu  $t1, $t1, $t3       # new buffer index pointer
+  ori   $t5, $zero, 256     # temp variable holds max buffer size
+  beq   $s1, $t5, EXIT0     # if loop has run 256 times, exit loop
+  beq   $t0, $t5, EXIT0     # if buff_occ == 256, exit loop (redundant but safer)
+  addu  $t1, $t1, $t3       # new buffer index address pointer
   #push  $t1
   #push  $t2
   #push  $t4
@@ -154,9 +160,9 @@ mainp0:
   addiu $sp, $sp, -4
   sw    $t4, 0($sp)
 
-  add   $a0, $zero, $s0
-  jal   crc32
-  addiu $s1, $s1, 1
+  add   $a0, $zero, $s0     # move seed value to argument
+  jal   crc32               # generate seed value
+  addiu $s1, $s1, 1         # increment loop counter
 
   #pop   $t4
   #pop   $t2
@@ -171,16 +177,16 @@ mainp0:
   sw    $zero, 0($sp)
   addiu $sp, $sp, 4
 
-  add   $s0, $zero, $v0
-  add   $t5, $zero, $v0
+  add   $s0, $zero, $v0     # move new random number to saved register
+  add   $t5, $zero, $v0     # move new random number to store register
 
 	
-  sw    $t4, 0($t2)
-  sw    $t5, 0($t1)
+  sw    $t4, 0($t2)         # store new buffer occupancy value
+  sw    $t5, 0($t1)         # store random number onto the shared stack
   # unlock and stay in loop
   ori   $a0, $zero, l1      # move lock to arguement register
   jal   unlock              # release the lock
-  #pop   $ra                 # get return address
+  #pop   $ra
   lw    $ra, 0($sp)
   sw    $zero, 0($sp)
   addiu $sp, $sp, 4
@@ -190,7 +196,7 @@ mainp0:
 EXIT0:
   ori   $a0, $zero, l1      # move lock to arguement register
   jal   unlock              # release the lock
-  #pop   $ra                 # get return address
+  #pop   $ra
   lw    $ra, 0($sp)
   sw    $zero, 0($sp)
   addiu $sp, $sp, 4
@@ -211,27 +217,26 @@ l1:
 
 # CONSUMER (PROCESSOR 1)
 mainp1:
-  #push  $ra                 # save return address
+  #push  $ra
   addiu $sp, $sp, -4
   sw    $ra, 0($sp)
 
   ori   $a0, $zero, l1      # move lock to arguement register
   jal   lock                # try to aquire the lock
   # critical code segment
-  ori   $t5, $zero, 256      # change to 256 later
-  beq   $s1, $t5, EXIT1     # moved to top
-  ori   $t5, $zero, 2
+  ori   $t5, $zero, 256     # set max loop counter
+  beq   $s1, $t5, EXIT1     # if loop count is 256, leave loop
+  ori   $t5, $zero, 2       # temp register for shifting left by 2
   ori   $t2, $zero, buff_occ
   ori   $t3, $zero, buffer
   lw    $t0, 0($t2)
   addi  $t4, $t0, -1
-  sllv  $t1, $t5, $t4       # shift buff_occ left by 2
-  ori   $t5, $zero, 0x0
-  bne   $t0, $t5, CNSME     # if buff_occ == 0, unlock and try again
+  sllv  $t1, $t5, $t4       # shift buff_occ left to multiply by 4
+  bne   $t0, $zero, CNSME   # if buff_occ == 0, unlock and try again
   # unlock and stay in loop
   ori   $a0, $zero, l1      # move lock to arguement register
   jal   unlock              # release the lock
-  #pop   $ra                 # get return address
+  #pop   $ra   
   lw    $ra, 0($sp)
   sw    $zero, 0($sp)
   addiu $sp, $sp, 4
@@ -290,15 +295,14 @@ MIN_MAX1:
   sw    $zero, 0($sp)
   addiu $sp, $sp, 4
 
-  ori   $t5, $zero, 0x0
-  sw    $t4, 0($t2)
-  sw    $t5, 0($t1)
+  sw    $t4, 0($t2)         # store new buffer occupancy value
+  sw    $zero, 0($t1)       # remove random number from the stack
   addiu $s1, $s1, 1
 
   # unlock and stay in loop
   ori   $a0, $zero, l1      # move lock to arguement register
   jal   unlock              # release the lock
-  #pop   $ra                 # get return address
+  #pop   $ra
   lw    $ra, 0($sp)
   sw    $zero, 0($sp)
   addiu $sp, $sp, 4
@@ -310,11 +314,27 @@ EXIT1:
   srlv  $s4, $t5, $s4
   ori   $a0, $zero, l1      # move lock to arguement register
   jal   unlock              # release the lock
-  #pop   $ra                 # get return address
+  ori   $t2, $zero, MAX_LOC
+  sw    $s2, 0($t2)         # store max value at MAX_LOC
+  ori   $t2, $zero, MIN_LOC
+  sw    $s3, 0($t2)         # store min value at MIN_LOC
+  ori   $t2, $zero, AVG_LOC
+  sw    $s4, 0($t2)         # store avg value at AVG_LOC
+
+  #pop   $ra
   lw    $ra, 0($sp)
   sw    $zero, 0($sp)
   addiu $sp, $sp, 4
   jr    $ra                 # return to caller
+
+MAX_LOC:
+  cfw 0x0
+	
+MIN_LOC:
+  cfw 0x0
+
+AVG_LOC:
+  cfw 0x0
 
 buff_occ:
   cfw 0x0                   # buffer occupancy value
