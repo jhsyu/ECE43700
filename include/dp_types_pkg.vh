@@ -90,6 +90,7 @@ package dp_types_pkg;
        // signals for cpu tracker. 
        word_t baddr, rdat2; 
        logic datomic; 
+       logic dWEN; 
 	} mem_wb_t;
 
     typedef enum logic[1:0]{

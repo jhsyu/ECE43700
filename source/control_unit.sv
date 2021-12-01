@@ -140,10 +140,12 @@ module control_unit (
                 cuif.datomic = 1'b1; 
             end
             SC: begin
+                cuif.regsrc = REGSRC_MEM; 
+                cuif.regdst = REGDST_RT;
                 cuif.alusrc = ALUSRC_IMM; 
                 cuif.extsel = SIGN_EXT;
-                cuif.dWEN = 1'b1; 
                 cuif.aluop = ALU_ADD; 
+                cuif.dWEN = 1'b1; 
                 cuif.datomic = 1'b1; 
             end
             HALT: begin

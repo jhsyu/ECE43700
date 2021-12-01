@@ -201,7 +201,7 @@ module datapath (
   assign rif.mem_wb_in.lui_ext = rif.ex_mem_out.lui_ext; 
   assign rif.mem_wb_in.regtbw = rif.ex_mem_out.regtbw; 
   assign rif.mem_wb_in.halt = rif.ex_mem_out.halt; 
-  //assign rif.mem_wb_in.regsrc = rif.ex_mem_out.regsrc; 
+  assign rif.mem_wb_in.regsrc = rif.ex_mem_out.regsrc; 
   //assign rif.mem_wb_in.regWEN = rif.ex_mem_out.regWEN; 
   assign rif.mem_wb_in.imm32 = rif.ex_mem_out.imm32; 
   assign rif.mem_wb_in.baddr = rif.ex_mem_out.baddr; 
@@ -210,35 +210,16 @@ module datapath (
   assign rif.mem_wb_in.pc = rif.ex_mem_out.pc;
   assign rif.mem_wb_in.npc = rif.ex_mem_out.npc; 
   assign rif.mem_wb_in.datomic = rif.ex_mem_out.datomic; 
+  assign rif.mem_wb_in.dWEN = rif.ex_mem_out.dWEN; 
   always_comb begin
     if (rif.ex_mem_out.datomic && rif.ex_mem_out.dWEN) begin
       // sc. 
       rif.mem_wb_in.regWEN = (dpif.dmemload == 32'h0) ? 1'b1 : 1'b0; 
-      rif.mem_wb_in.regsrc = (dpif.dmemload == 32'h0) ? REGSRC_MEM : rif.ex_mem_out.regsrc; 
     end
     else begin
       rif.mem_wb_in.regWEN = rif.ex_mem_out.regWEN; 
-      rif.mem_wb_in.regsrc = rif.ex_mem_out.regsrc; 
     end
   end
-
-  // datapath cache interface connections. 
-
-  assign dpif.dmemREN = rif.ex_mem_out.dREN;
-  assign dpif.dmemWEN = rif.ex_mem_out.dWEN;
-  assign dpif.dmemaddr = rif.ex_mem_out.alu_out; 
-  assign dpif.dmemstore = rif.ex_mem_out.rdat2_fwd;
-  assign dpif.datomic = rif.ex_mem_out.datomic; 
-
-  always_ff @(posedge CLK, negedge nRST) begin
-    if (~nRST) begin
-      dpif.halt <= 0;
-    end
-    else begin
-      dpif.halt <= rif.mem_wb_out.halt | dpif.halt;
-    end
-  end
-
   // cpu tracker signals.
   opcode_t cpu_tracker_opcode;
   assign cpu_tracker_opcode = opcode_t'(rif.mem_wb_out.imemload[31:26]);  
@@ -249,6 +230,31 @@ module datapath (
   assign cpu_tracker_rt = regbits_t'(rif.mem_wb_out.imemload[20:16]);
   logic wb_enable; 
   assign wb_enable = rif.mem_wb_en;
+
+  // datapath cache interface connections. 
+
+  assign dpif.dmemREN = rif.ex_mem_out.dREN;
+  assign dpif.dmemWEN = rif.ex_mem_out.dWEN;
+  assign dpif.dmemaddr = rif.ex_mem_out.alu_out; 
+  //assign dpif.dmemstore = rif.ex_mem_out.rdat2_fwd;
+  assign dpif.datomic = rif.ex_mem_out.datomic; 
+  always_comb begin
+    dpif.dmemstore = rif.ex_mem_out.rdat2_fwd;
+    if (rif.mem_wb_out.dWEN && rif.mem_wb_out.datomic && rif.mem_wb_out.dload == word_t'(0) &&
+        regbits_t'(rif.mem_wb_out.imemload[20:16]) == regbits_t'(rif.ex_mem_out.imemload[20:16])) begin
+      dpif.dmemstore = rfif.wdat; 
+    end
+  end
+
+  always_ff @(posedge CLK, negedge nRST) begin
+    if (~nRST) begin
+      dpif.halt <= 0;
+    end
+    else begin
+      dpif.halt <= rif.mem_wb_out.halt | dpif.halt;
+    end
+  end
+
 
   // hazard unit interface connections. 
   assign huif.dhit = dpif.dhit; 
