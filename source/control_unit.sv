@@ -113,6 +113,7 @@ module control_unit (
             end
             SW: begin
                 cuif.alusrc = ALUSRC_IMM; 
+                cuif.regdst = REGDST_RT; 
                 cuif.extsel = SIGN_EXT;
                 cuif.dWEN = 1'b1; 
                 cuif.aluop = ALU_ADD; 

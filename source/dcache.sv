@@ -25,14 +25,7 @@ module dcache(
     assign daddr = dcachef_t'(dcif.dmemaddr); 
     assign snpaddr = dcachef_t'(cif.ccsnoopaddr); 
     assign evict_id = ~set[daddr.idx].lru_id;
-    always_comb begin
-        dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff]; 
-        if (dcif.dmemWEN && dcif.datomic) begin // if SC
-            dcif.dmemload = (dcif.dmemaddr == link_reg) ? 32'b1 : 32'b0; 
-        end
-    end
     //assign dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff];
-
     // check the cache frame and assert dhit.
     logic dhit; // raw signal that just determine if the data present in this cache. 
     assign dcif.dhit = dhit & (dcif.dmemREN | (dcif.dmemWEN & hit_frame.dirty)); 
@@ -41,7 +34,7 @@ module dcache(
     // 3 cases here:
     // I->M: dirty 0->1
     //      need to invalidate possible copies in other cache. 
-    // S->M: dirty 0->1
+    // S->M: dirty 0->1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
     //      need to invalidate possible copies in other cache. 
     // M->M: dirty 1->1
     //      since there is no other copies, no need to go inv. 
@@ -92,8 +85,23 @@ module dcache(
         end
     end
 
+    // link_reg contains the address of data memory access. 
+    // link_frame_addr stores the start address of the coresponding frame in cache.
+    word_t link_reg, link_frame_addr; 
+    assign link_frame_addr = {link_reg[31:3], 3'b0}; 
     // initialization, load from memory, update lru_id. 
     // all the content of cacheline will be updated in this combinational block. 
+    always_comb begin
+        if (dcif.datomic && dcif.dmemWEN) begin
+            // sc case. check link register and the dcif.dmemaddr.
+            // 0: incoherence.
+            dcif.dmemload = link_reg == dcif.dmemaddr ? 32'h1 : 32'h0; 
+        end
+        else begin
+            dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff];
+        end
+    end
+
     always_ff @(posedge CLK or negedge nRST) begin
         if (~nRST) begin
             set <= '0; 
@@ -108,31 +116,21 @@ module dcache(
             // if just wait, keep the current case. 
             set[snpaddr.idx].lru_id <= (cif.ccinv) ?  ~snp_hit_frame_idx : set[snpaddr.idx].lru_id; 
             // block the cpu R/W during ccwait.
-            if (snpaddr.idx == daddr.idx && snpaddr.tag == daddr.tag) begin
-                // block
-            end 
-            else begin
-                if (dcif.dhit && dcif.dmemREN) begin
-                    set[daddr.idx].lru_id <= hit_frame_idx; 
-                end
-                else if (dcif.dhit && dcif.dmemWEN) begin
-                    // if dcif.dhit is set, the state is M->M.
-                    // in other cases, the invalid bit will be set in INV state.  
-                    set[daddr.idx].lru_id <= hit_frame_idx; 
-                    set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff] <= dcif.dmemstore; 
-                    set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
-                end
-            end
+            link_reg <= ({link_frame_addr} == word_t'({snpaddr[31:3], 3'b0})) ? '1 : link_reg; 
         end
 
         else if (dcif.dhit & dcif.dmemWEN) begin
-            set[daddr.idx].lru_id <= hit_frame_idx; 
-            set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff] <= dcif.dmemstore; 
-            set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
+            if (~dcif.datomic || (dcif.datomic && link_reg == dcif.dmemaddr)) begin
+                set[daddr.idx].lru_id <= hit_frame_idx; 
+                set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff] <= dcif.dmemstore; 
+                set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
+                link_reg <= (dcif.datomic && link_reg == dcif.dmemaddr) ? '0 : link_reg; 
+            end
         end
         else if (dcif.dhit & dcif.dmemREN) begin
             // update the lru_id upon a dhit
             set[daddr.idx].lru_id <= hit_frame_idx; 
+            link_reg <= (dcif.datomic) ? dcif.dmemaddr : link_reg; 
         end
         // load 1st word. 
         else if (ds == ALLOC0 && ~cif.dwait) begin

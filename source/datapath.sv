@@ -201,8 +201,8 @@ module datapath (
   assign rif.mem_wb_in.lui_ext = rif.ex_mem_out.lui_ext; 
   assign rif.mem_wb_in.regtbw = rif.ex_mem_out.regtbw; 
   assign rif.mem_wb_in.halt = rif.ex_mem_out.halt; 
-  assign rif.mem_wb_in.regsrc = rif.ex_mem_out.regsrc; 
-  assign rif.mem_wb_in.regWEN = rif.ex_mem_out.regWEN; 
+  //assign rif.mem_wb_in.regsrc = rif.ex_mem_out.regsrc; 
+  //assign rif.mem_wb_in.regWEN = rif.ex_mem_out.regWEN; 
   assign rif.mem_wb_in.imm32 = rif.ex_mem_out.imm32; 
   assign rif.mem_wb_in.baddr = rif.ex_mem_out.baddr; 
   assign rif.mem_wb_in.rdat2 = rif.ex_mem_out.rdat2; 
@@ -210,6 +210,17 @@ module datapath (
   assign rif.mem_wb_in.pc = rif.ex_mem_out.pc;
   assign rif.mem_wb_in.npc = rif.ex_mem_out.npc; 
   assign rif.mem_wb_in.datomic = rif.ex_mem_out.datomic; 
+  always_comb begin
+    if (rif.ex_mem_out.datomic && rif.ex_mem_out.dWEN) begin
+      // sc. 
+      rif.mem_wb_in.regWEN = (dpif.dmemload == 32'h0) ? 1'b1 : 1'b0; 
+      rif.mem_wb_in.regsrc = (dpif.dmemload == 32'h0) ? REGSRC_MEM : rif.ex_mem_out.regsrc; 
+    end
+    else begin
+      rif.mem_wb_in.regWEN = rif.ex_mem_out.regWEN; 
+      rif.mem_wb_in.regsrc = rif.ex_mem_out.regsrc; 
+    end
+  end
 
   // datapath cache interface connections. 
 

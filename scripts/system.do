@@ -3,6 +3,7 @@ quietly WaveActivateNextPane {} 0
 add wave -noupdate /system_tb/PROG/CLK
 add wave -noupdate /system_tb/nRST
 add wave -noupdate -expand -group DC0 /system_tb/DUT/CPU/dcif0/datomic
+add wave -noupdate -expand -group DC0 /system_tb/DUT/CPU/CM0/DCACHE/link_reg
 add wave -noupdate -expand -group DC0 /system_tb/DUT/CPU/CM0/dcif/dhit
 add wave -noupdate -expand -group DC0 -color {Cornflower Blue} /system_tb/DUT/CPU/DP0/mem_opcode
 add wave -noupdate -expand -group DC0 -color {Cornflower Blue} /system_tb/DUT/CPU/DP0/rif/ex_mem_out.imemload
@@ -16,9 +17,10 @@ add wave -noupdate -expand -group DC0 {/system_tb/DUT/CPU/ccif/ccwrite[0]}
 add wave -noupdate -expand -group DC0 {/system_tb/DUT/CPU/ccif/cctrans[0]}
 add wave -noupdate -expand -group DC0 {/system_tb/DUT/CPU/ccif/ccwait[0]}
 add wave -noupdate -expand -group DC0 {/system_tb/DUT/CPU/ccif/ccsnoopaddr[0]}
-add wave -noupdate -expand -group DC0 /system_tb/DUT/CPU/CM0/DCACHE/set
+add wave -noupdate -expand -group DC0 -expand -subitemconfig {{/system_tb/DUT/CPU/CM0/DCACHE/set[0]} -expand {/system_tb/DUT/CPU/CM0/DCACHE/set[0].frame} -expand {/system_tb/DUT/CPU/CM0/DCACHE/set[0].frame[1]} -expand} /system_tb/DUT/CPU/CM0/DCACHE/set
 add wave -noupdate -expand -group DC0 -color Violet /system_tb/DUT/CPU/CM0/DCACHE/ds
 add wave -noupdate -expand -group DC1 /system_tb/DUT/CPU/dcif1/datomic
+add wave -noupdate -expand -group DC1 /system_tb/DUT/CPU/CM1/DCACHE/link_reg
 add wave -noupdate -expand -group DC1 /system_tb/DUT/CPU/CM1/dcif/dhit
 add wave -noupdate -expand -group DC1 -color {Cornflower Blue} /system_tb/DUT/CPU/DP1/mem_opcode
 add wave -noupdate -expand -group DC1 -color {Cornflower Blue} /system_tb/DUT/CPU/DP1/rif/ex_mem_out.imemload
@@ -32,7 +34,7 @@ add wave -noupdate -expand -group DC1 {/system_tb/DUT/CPU/ccif/ccwrite[1]}
 add wave -noupdate -expand -group DC1 {/system_tb/DUT/CPU/ccif/cctrans[1]}
 add wave -noupdate -expand -group DC1 {/system_tb/DUT/CPU/ccif/ccwait[1]}
 add wave -noupdate -expand -group DC1 {/system_tb/DUT/CPU/ccif/ccsnoopaddr[1]}
-add wave -noupdate -expand -group DC1 /system_tb/DUT/CPU/CM1/DCACHE/set
+add wave -noupdate -expand -group DC1 -expand /system_tb/DUT/CPU/CM1/DCACHE/set
 add wave -noupdate -expand -group DC1 -color Violet /system_tb/DUT/CPU/CM1/DCACHE/ds
 add wave -noupdate -expand -group CC -color Violet /system_tb/DUT/CPU/CC/s
 add wave -noupdate -expand -group CC /system_tb/DUT/CPU/CC/prid
@@ -42,7 +44,7 @@ add wave -noupdate -expand -group RAM /system_tb/DUT/CPU/ccif/ramstate
 add wave -noupdate -expand -group RAM /system_tb/DUT/CPU/ccif/ramaddr
 add wave -noupdate -expand -group RAM /system_tb/DUT/CPU/ccif/ramstore
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {1314977478 ps} 0}
+WaveRestoreCursors {{Cursor 1} {401547 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 184
 configure wave -valuecolwidth 146
@@ -58,4 +60,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {0 ps} {751 ns}
+WaveRestoreZoom {0 ps} {452 ns}
