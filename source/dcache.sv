@@ -17,7 +17,7 @@ module dcache(
     dcachef_t daddr, snpaddr; 
     dcache_line_t [7:0] set; 
     dcache_state_t ds, nds; 
-    word_t hit_count, link_reg; 
+    //word_t hit_count, link_reg; 
     logic hit_frame_idx, snp_hit_frame_idx;
     dcache_frame hit_frame, snp_hit_frame;  
     logic evict_id; 
@@ -86,16 +86,16 @@ module dcache(
     end
 
     // link_reg contains the address of data memory access. 
-    // link_frame_addr stores the start address of the coresponding frame in cache.
-    word_t link_reg, link_frame_addr; 
-    assign link_frame_addr = {link_reg[31:3], 3'b0}; 
+    // link_addr stores the start address of the coresponding frame in cache.
+    word_t link_reg, link_addr; 
+    assign link_addr = {dcif.dmemaddr[31:3], 3'b0}; 
     // initialization, load from memory, update lru_id. 
     // all the content of cacheline will be updated in this combinational block. 
     always_comb begin
         if (dcif.datomic && dcif.dmemWEN) begin
             // sc case. check link register and the dcif.dmemaddr.
             // 0: incoherence.
-            dcif.dmemload = link_reg == dcif.dmemaddr ? 32'h1 : 32'h0; 
+            dcif.dmemload = (link_reg == link_addr) ? 32'h1 : 32'h0; 
         end
         else begin
             dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff];
@@ -105,7 +105,7 @@ module dcache(
     always_ff @(posedge CLK or negedge nRST) begin
         if (~nRST) begin
             set <= '0; 
-            link_reg <= '0; 
+            link_reg <= '1; 
         end
         else if ((cif.ccinv | cif.ccwait) & snp_hit) begin
             // invalid the copy of THIS dcache. 
@@ -115,8 +115,8 @@ module dcache(
             // if invalidated., replace this block in the incomming conflict. 
             // if just wait, keep the current case. 
             set[snpaddr.idx].lru_id <= (cif.ccinv) ?  ~snp_hit_frame_idx : set[snpaddr.idx].lru_id; 
-            // block the cpu R/W during ccwait.
-            link_reg <= ({link_frame_addr} == word_t'({snpaddr[31:3], 3'b0})) ? '1 : link_reg; 
+            // invalidation by other cores.
+            link_reg <= (link_reg == word_t'({snpaddr[31:3], 3'b0})) ? '1 : link_reg; 
         end
 
         else if (dcif.dhit & dcif.dmemWEN) begin
@@ -124,13 +124,14 @@ module dcache(
                 set[daddr.idx].lru_id <= hit_frame_idx; 
                 set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff] <= dcif.dmemstore; 
                 set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
-                link_reg <= (dcif.datomic && link_reg == dcif.dmemaddr) ? '0 : link_reg; 
+                // SW/SC will invalidate the link register. 
+                link_reg <= (link_reg == word_t'({dcif.dmemaddr[31:3], 3'b0})) ? '1 : link_reg; 
             end
         end
         else if (dcif.dhit & dcif.dmemREN) begin
             // update the lru_id upon a dhit
             set[daddr.idx].lru_id <= hit_frame_idx; 
-            link_reg <= (dcif.datomic) ? dcif.dmemaddr : link_reg; 
+            link_reg <= (dcif.datomic) ? word_t'({dcif.dmemaddr[31:3], 3'b0}) : link_reg; 
         end
         // load 1st word. 
         else if (ds == ALLOC0 && ~cif.dwait) begin
@@ -294,13 +295,13 @@ module dcache(
 
             end
             
-            COUNT: begin
-                cif.cctrans = 1'b1; 
-                cif.dWEN = 1'b1; 
-                cif.daddr = word_t'('h3100); 
-                cif.dstore = hit_count; 
-                nds = (cif.dwait) ? COUNT : CLEAN; 
-            end
+            //COUNT: begin
+            //    cif.cctrans = 1'b1; 
+            //    cif.dWEN = 1'b1; 
+            //    cif.daddr = word_t'('h3100); 
+            //    cif.dstore = hit_count; 
+            //    nds = (cif.dwait) ? COUNT : CLEAN; 
+            //end
             CLEAN: begin
                 dcif.flushed = 1'b1; 
                 nds = CLEAN; 
