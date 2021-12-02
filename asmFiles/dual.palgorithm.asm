@@ -118,7 +118,6 @@ aquire:
   addiu $t0, $t0, 1
   sc    $t0, 0($a0)
   nop
-  nop
   beq   $t0, $0, lock       # if sc failed retry
   jr    $ra
 #----------------------------------------------------------

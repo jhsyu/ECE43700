@@ -31,7 +31,7 @@ module datapath (
   register_file_if rfif(); 
   alu_if           aluif(); 
   control_unit_if  cuif(); 
-  request_unit_if  ruif(); 
+  //request_unit_if  ruif(); 
   pipeline_reg_if  rif();
   hazard_unit_if   huif(); 
   forwarding_if    fwif();
@@ -178,7 +178,7 @@ module datapath (
   assign rif.ex_mem_in.datomic = rif.id_ex_out.datomic; 
 
   // PC
-  logic sc_flush; 
+  //logic sc_flush; 
   always_comb begin : PC_MUX
     //sc_flush = 1'b0; 
     if (huif.pcen && dpif.ihit && ~mem_op_stall) begin
@@ -297,8 +297,8 @@ module datapath (
   assign rif.id_ex_en = (huif.id_ex_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
   assign rif.ex_mem_en = (huif.ex_mem_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
   assign rif.mem_wb_en = (huif.mem_wb_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
-  assign rif.if_id_flush = huif.if_id_flush || sc_flush; 
-  assign rif.id_ex_flush = huif.id_ex_flush || sc_flush; 
+  assign rif.if_id_flush = huif.if_id_flush; 
+  assign rif.id_ex_flush = huif.id_ex_flush; 
   assign rif.ex_mem_flush = huif.ex_mem_flush; 
   assign rif.mem_wb_flush = huif.mem_wb_flush; 
 
@@ -323,7 +323,7 @@ module datapath (
   // control unit. 
   control_unit cu (cuif); 
   // request unit. 
-  request_unit ru (.CLK(CLK), .nRST(nRST), .ruif(ruif)); 
+  //request_unit ru (.CLK(CLK), .nRST(nRST), .ruif(ruif)); 
   // hazard unit. 
   hazard_unit hu (.huif(huif)); 
 

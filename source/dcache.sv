@@ -8,7 +8,6 @@ import cpu_types_pkg::*;
 import dp_types_pkg::*;
 import caches_types_pkg::*; 
 
-
 module dcache(
     input logic CLK, nRST, 
     datapath_cache_if.dcache dcif, 
@@ -151,27 +150,27 @@ module dcache(
             link_reg <= (dcif.datomic) ? word_t'({dcif.dmemaddr[31:3], 3'b0}) : link_reg; 
         end
         // load 1st word. 
-        else if (ds == ALLOC0 && ~cif.dwait) begin
-            // if the current state is ALLOC0, and dload is ready. 
+        else if (ds == DC_ALLOC0 && ~cif.dwait) begin
+            // if the current state is DC_ALLOC0, and dload is ready. 
             set[daddr.idx].frame[evict_id].data[0]    <= cif.dload; 
         end
         // load second word. 
-        else if (ds == ALLOC1 && ~cif.dwait) begin
+        else if (ds == DC_ALLOC1 && ~cif.dwait) begin
             // also sets dirty, valid. 
             set[daddr.idx].frame[evict_id].data[1]    <= cif.dload; 
             set[daddr.idx].frame[evict_id].tag        <= daddr.tag;         
             set[daddr.idx].frame[evict_id].dirty      <= 1'b0; 
             set[daddr.idx].frame[evict_id].valid      <= 1'b1; 
         end
-        else if (ds == WB1 & ~cif.dwait) begin
+        else if (ds == DC_WB1 & ~cif.dwait) begin
             set[daddr.idx].frame[evict_id].valid <= 1'b0; 
             set[daddr.idx].frame[evict_id].dirty <= 1'b0; 
         end
-        else if (ds == INV & ~cif.ccwait & ~cif.dwait) begin
+        else if (ds == DC_INV & ~cif.ccwait & ~cif.dwait) begin
             // set the dirty bit, assert dcif.dhit
             set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
         end
-        else if (ds == FLUSH0 & ~cif.ccwait & ~cif.dwait) begin
+        else if (ds == DC_FLUSH0 & ~cif.ccwait & ~cif.dwait) begin
             // invalidate the cache that is already write back. 
             set[dump_idx[4:2]].frame[dump_idx[1]].dirty <= 1'b0; 
             set[dump_idx[4:2]].frame[dump_idx[1]].valid <= 1'b0; 
@@ -180,7 +179,7 @@ module dcache(
     logic dumping; 
     always_ff @(posedge CLK, negedge nRST) begin
         if (~nRST) begin
-            ds          <= IDLE; 
+            ds          <= DC_IDLE; 
             dump_idx    <= '0; 
         end
         else begin 
@@ -203,12 +202,12 @@ module dcache(
         nds = ds; 
         dumping = 1'b0; 
         casez(ds)
-            IDLE: begin
-                if(dcif.halt) nds = FLUSH0; 
+            DC_IDLE: begin
+                if(dcif.halt) nds = DC_FLUSH0; 
                 else if (cif.ccwait && snp_hit && snp_hit_frame.dirty) begin
                     // if case is FWD, the cpu should be blocked. 
                     // and the data in the cache should be at M. 
-                    nds = FWD0; 
+                    nds = DC_FWD0; 
                 end
                 else if (dcif.dmemWEN && ~cif.ccwait && dhit && ~hit_frame.dirty && 
                         (~dcif.datomic || dcif.datomic && link_reg == link_addr)) begin
@@ -217,62 +216,62 @@ module dcache(
                     // this should be happening before the dcif.dhit.
                     // at this time dhit is 1'b1, but dcif.dhit is still waiting for dirty bit to set. 
                     // shared state: valid, ~dirty.
-                    nds = INV; 
+                    nds = DC_INV; 
                 end
                 else if ((dcif.dmemREN || dcif.dmemWEN) && ~dhit && ~cif.ccwait) begin
                     // ~dhit indicate the incomming request does not appears in the cache. 
                     // check the victim, if dirty, write back, if vacant, just do the allocate.
-                    nds = (set[daddr.idx].frame[evict_id].dirty) ? WB0 : ALLOC0; 
+                    nds = (set[daddr.idx].frame[evict_id].dirty) ? DC_WB0 : DC_ALLOC0; 
                 end
             end
-            INV: begin
+            DC_INV: begin
                 cif.cctrans = 1'b1; //I/S->M
                 cif.ccwrite = dcif.dmemWEN; 
                 cif.daddr = {daddr[31:3], 1'b0, 2'b0}; 
-                nds = (cif.dwait) ? INV : IDLE; 
+                nds = (cif.dwait) ? DC_INV : DC_IDLE; 
             end
-            FWD0: begin
+            DC_FWD0: begin
                 cif.cctrans = 1'b1; 
                 cif.dstore = snp_hit_frame.data[0]; 
                 cif.daddr = {snpaddr[31:3], 1'b0, 2'b0};
-                nds = (cif.dwait) ? FWD0 : FWD1; 
+                nds = (cif.dwait) ? DC_FWD0 : DC_FWD1; 
             end
-            FWD1: begin
+            DC_FWD1: begin
                 cif.dstore = snp_hit_frame.data[1]; 
                 cif.daddr = {snpaddr[31:3], 1'b1, 2'b0};
-                nds = (cif.dwait) ? FWD1 : IDLE; 
+                nds = (cif.dwait) ? DC_FWD1 : DC_IDLE; 
             end
-            ALLOC0: begin
-                cif.cctrans = 1'b1; // i->s, the valid and dirty is set in ALLOC1.
+            DC_ALLOC0: begin
+                cif.cctrans = 1'b1; // i->s, the valid and dirty is set in DC_ALLOC1.
                 cif.ccwrite = dcif.dmemWEN; 
                 cif.dREN = 1'b1; 
                 cif.daddr = {daddr[31:3], 3'b000}; 
-                nds = (cif.dwait) ? ALLOC0 : ALLOC1; 
+                nds = (cif.dwait) ? DC_ALLOC0 : DC_ALLOC1; 
             end
-            ALLOC1: begin
+            DC_ALLOC1: begin
                 cif.ccwrite = dcif.dmemWEN; 
                 cif.dREN = 1'b1; 
                 cif.daddr = {daddr[31:3], 3'b100}; 
-                nds = (cif.dwait) ? ALLOC1 : IDLE; 
+                nds = (cif.dwait) ? DC_ALLOC1 : DC_IDLE; 
             end
-            WB0: begin
+            DC_WB0: begin
                 cif.cctrans = 1'b1; // S/M->I. both dirty and valid are updated upon finish of wb. 
                 cif.ccwrite = dcif.dmemWEN;  
                 cif.dWEN = 1'b1; 
                 cif.daddr = {set[daddr.idx].frame[evict_id].tag, daddr.idx, 3'b000}; 
                 cif.dstore = set[daddr.idx].frame[evict_id].data[0]; 
-                nds = (cif.dwait) ? WB0 : WB1; 
+                nds = (cif.dwait) ? DC_WB0 : DC_WB1; 
             end
-            WB1: begin 
+            DC_WB1: begin 
                 cif.ccwrite = dcif.dmemWEN; 
                 cif.dWEN = 1'b1; 
                 cif.daddr = {set[daddr.idx].frame[evict_id].tag, daddr.idx, 3'b100}; 
                 cif.dstore = set[daddr.idx].frame[evict_id].data[1]; 
-                nds = (cif.dwait) ? WB1 : IDLE; 
+                nds = (cif.dwait) ? DC_WB1 : DC_IDLE; 
             end
-            FLUSH0: begin
+            DC_FLUSH0: begin
                 if (cif.ccwait & snp_hit & snp_hit_frame.valid & snp_hit_frame.dirty) begin
-                    nds = FWD0; 
+                    nds = DC_FWD0; 
                 end
                 else begin
                     dumping = 1'b1; 
@@ -282,7 +281,7 @@ module dcache(
                         cif.daddr = {set[dump_idx[4:2]].frame[dump_idx[1]].tag, dump_idx[4:2], dump_idx[0], 2'b0}; 
                         cif.dstore = set[dump_idx[4:2]].frame[dump_idx[1]].data[dump_idx[0]];
                         nxt_dump_idx = (cif.dwait) ? dump_idx : dump_idx + 1;
-                        nds = (cif.dwait) ? FLUSH0 : FLUSH1; 
+                        nds = (cif.dwait) ? DC_FLUSH0 : DC_FLUSH1; 
                     end
                     else begin
                         cif.cctrans = 1'b0; 
@@ -290,39 +289,39 @@ module dcache(
                         cif.daddr = '0; 
                         cif.dstore = 'hBAD1BAD1;
                         nxt_dump_idx = dump_idx + 1;
-                        nds = (dump_idx < 31) ? FLUSH0 : CLEAN; 
+                        nds = (dump_idx < 31) ? DC_FLUSH0 : DC_CLEAN; 
                     end
 		        end
                     
             end
-            FLUSH1: begin
+            DC_FLUSH1: begin
                 dumping = 1'b1; 
                 cif.dWEN = 1'b1; 
                 cif.daddr = {set[dump_idx[4:2]].frame[dump_idx[1]].tag, dump_idx[4:2], dump_idx[0], 2'b0}; 
                 cif.dstore = set[dump_idx[4:2]].frame[dump_idx[1]].data[dump_idx[0]];
                 nxt_dump_idx = (cif.dwait) ? dump_idx : dump_idx + 1;
                 if (cif.dwait) begin
-                    nds = FLUSH1;
+                    nds = DC_FLUSH1;
                 end
                 else if (dump_idx < 31) begin
-                    nds = FLUSH0; 
+                    nds = DC_FLUSH0; 
                 end
                 else begin
-                    nds = CLEAN; 
+                    nds = DC_CLEAN; 
                 end
 
             end
             
-            //COUNT: begin
+            //DC_COUNT: begin
             //    cif.cctrans = 1'b1; 
             //    cif.dWEN = 1'b1; 
             //    cif.daddr = word_t'('h3100); 
             //    cif.dstore = hit_count; 
-            //    nds = (cif.dwait) ? COUNT : CLEAN; 
+            //    nds = (cif.dwait) ? DC_COUNT : DC_CLEAN; 
             //end
-            CLEAN: begin
+            DC_CLEAN: begin
                 dcif.flushed = 1'b1; 
-                nds = CLEAN; 
+                nds = DC_CLEAN; 
             end
         endcase
     end
