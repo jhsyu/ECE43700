@@ -2,6 +2,7 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate /system_tb/PROG/CLK
 add wave -noupdate /system_tb/nRST
+add wave -noupdate -color Gold /system_tb/DUT/CPU/DP0/rif/mem_wb_out.pc
 add wave -noupdate -color Gold /system_tb/DUT/CPU/DP0/cpu_tracker_opcode
 add wave -noupdate -color Gold /system_tb/DUT/CPU/DP0/rif/mem_wb_out.imemload
 add wave -noupdate /system_tb/DUT/CPU/DP0/rfif/WEN
@@ -10,6 +11,10 @@ add wave -noupdate /system_tb/DUT/CPU/DP0/rfif/wdat
 add wave -noupdate {/system_tb/DUT/CPU/DP0/rf/reg_curr[8]}
 add wave -noupdate /system_tb/DUT/CPU/DP0/rif/ex_mem_out.pcsrc
 add wave -noupdate /system_tb/DUT/CPU/DP0/rif/ex_mem_out.zero
+add wave -noupdate /system_tb/DUT/CPU/DP0/rif/ex_mem_out.rdat1
+add wave -noupdate /system_tb/DUT/CPU/DP0/rif/ex_mem_out.rdat2
+add wave -noupdate /system_tb/DUT/CPU/DP0/rfif/wdat
+add wave -noupdate /system_tb/DUT/CPU/DP0/sc_flush
 add wave -noupdate -expand -group DP0 /system_tb/DUT/CPU/dcif0/datomic
 add wave -noupdate -expand -group DP0 /system_tb/DUT/CPU/dcif0/dmemWEN
 add wave -noupdate -expand -group DP0 /system_tb/DUT/CPU/dcif0/dmemaddr
@@ -18,10 +23,12 @@ add wave -noupdate -expand -group DP0 /system_tb/DUT/CPU/dcif0/dmemload
 add wave -noupdate -expand -group DP0 /system_tb/DUT/CPU/CM0/DCACHE/link_reg
 add wave -noupdate -expand -group DP0 /system_tb/DUT/CPU/CM0/DCACHE/link_addr
 add wave -noupdate -expand -group DP0 /system_tb/DUT/CPU/CM0/dcif/dhit
+add wave -noupdate -expand -group DP0 -color {Cornflower Blue} /system_tb/DUT/CPU/DP0/rif/ex_mem_out.pc
 add wave -noupdate -expand -group DP0 -color {Cornflower Blue} /system_tb/DUT/CPU/DP0/mem_opcode
 add wave -noupdate -expand -group DP0 -color {Cornflower Blue} /system_tb/DUT/CPU/DP0/rif/ex_mem_out.imemload
+add wave -noupdate -expand -group DP0 /system_tb/DUT/CPU/DP0/rif/ex_mem_out.npc
 add wave -noupdate -expand -group DP0 -color Violet /system_tb/DUT/CPU/CM0/DCACHE/ds
-add wave -noupdate -expand -group DP0 -expand -subitemconfig {{/system_tb/DUT/CPU/CM0/DCACHE/set[3].frame} -expand {/system_tb/DUT/CPU/CM0/DCACHE/set[3].frame[1]} -expand} {/system_tb/DUT/CPU/CM0/DCACHE/set[3]}
+add wave -noupdate -expand -group DP0 -expand {/system_tb/DUT/CPU/CM0/DCACHE/set[3]}
 add wave -noupdate -group DC0 /system_tb/DUT/CPU/DP0/rif/ex_mem_out.regsrc
 add wave -noupdate -group DC0 /system_tb/DUT/CPU/DP0/rif/ex_mem_out.regtbw
 add wave -noupdate -group DC0 /system_tb/DUT/CPU/DP0/rif/mem_wb_out.regtbw
@@ -68,7 +75,7 @@ add wave -noupdate -expand -group RAM /system_tb/DUT/CPU/ccif/ramstate
 add wave -noupdate -expand -group RAM /system_tb/DUT/CPU/ccif/ramaddr
 add wave -noupdate -expand -group RAM /system_tb/DUT/CPU/ccif/ramstore
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {4483354 ps} 0}
+WaveRestoreCursors {{Cursor 1} {5199946 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 184
 configure wave -valuecolwidth 146
@@ -84,4 +91,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {4375600 ps} {5182417 ps}
+WaveRestoreZoom {3943800 ps} {6760800 ps}

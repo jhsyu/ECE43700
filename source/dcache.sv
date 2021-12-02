@@ -43,6 +43,9 @@ module dcache(
             end
         end
         else dcif.dhit = 1'b0; 
+        if (cif.ccwait || cif.ccinv) begin
+            dcif.dhit = 1'b0; 
+        end
     end
     // dirty: wait until the content in dcache updated then assert dhit. 
     // the dirty bit will be set only after the invalidation is done. 

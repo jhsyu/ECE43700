@@ -183,15 +183,12 @@ module coherence_control (
 			end
 			FWDWB4: begin
 				ccif.dload[prid] = dstore[~prid]; 
-				ccif.dwait[prid] = 1'b0; 
-				nxt_s = FWDWB5; 
-			end
-			FWDWB5: begin
 				ccif.ramstore = dstore[~prid]; 
 				ccif.ramaddr = daddr[~prid]; 
 				ccif.ramWEN = 1'b1; 
+				ccif.dwait[prid] = ~(ccif.ramstate == ACCESS); 
 				ccif.dwait[~prid] = ~(ccif.ramstate == ACCESS); 
-				nxt_s = (ccif.ramstate == ACCESS) ? IDLE : FWDWB5; 
+				nxt_s = (ccif.ramstate == ACCESS) ? IDLE : FWDWB4; 
 			end
 
 			LD1: begin
