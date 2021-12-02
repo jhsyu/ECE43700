@@ -147,6 +147,7 @@ module control_unit (
                 cuif.aluop = ALU_ADD; 
                 cuif.dWEN = 1'b1; 
                 cuif.datomic = 1'b1; 
+                cuif.regWEN = 1'b1; 
             end
             HALT: begin
                 cuif.halt = 1'b1; 

@@ -184,8 +184,35 @@ module datapath (
       casez (rif.ex_mem_out.pcsrc)
         PCSRC_REG: npc = rif.ex_mem_out.rdat1; 
         PCSRC_JAL: npc = rif.ex_mem_out.jaddr; 
-        PCSRC_BEQ: npc = (rif.ex_mem_out.zero) ? rif.ex_mem_out.baddr : pc4; 
-        PCSRC_BNE: npc = (rif.ex_mem_out.zero) ? pc4 : rif.ex_mem_out.baddr;
+        PCSRC_BEQ: begin 
+          npc = (rif.ex_mem_out.zero) ? rif.ex_mem_out.baddr : pc4; 
+          if(rif.mem_wb_out.datomic && rif.mem_wb_out.dWEN) begin
+            // sc fails. write to register file.
+            // sc rt
+            // beq rs/rt
+            if(rif.mem_wb_out.imemload[20:16] == rif.ex_mem_out.imemload[25:21]) begin
+              npc = (rfif.wdat == rif.ex_mem_out.rdat1) ? rif.ex_mem_out.baddr : pc4; 
+            end
+            else if (rif.mem_wb_out.imemload[20:16] == rif.ex_mem_out.imemload[20:16]) begin
+              npc = (rfif.wdat == rif.ex_mem_out.rdat2) ? rif.ex_mem_out.baddr : pc4; 
+            end
+          end
+        end
+        PCSRC_BNE: begin 
+          npc = (rif.ex_mem_out.zero) ? pc4 : rif.ex_mem_out.baddr;
+          if(rif.mem_wb_out.datomic && rif.mem_wb_out.dWEN) begin
+            // sc fails. write to register file.
+            // sc rt
+            // beq rs/rt
+            if(rif.mem_wb_out.imemload[20:16] == rif.ex_mem_out.imemload[25:21]) begin
+              npc = (rfif.wdat == rif.ex_mem_out.rdat1) ? pc4 : rif.ex_mem_out.baddr; 
+            end
+            else if (rif.mem_wb_out.imemload[20:16] == rif.ex_mem_out.imemload[20:16]) begin
+              npc = (rfif.wdat == rif.ex_mem_out.rdat2) ? pc4 : rif.ex_mem_out.baddr; 
+            end
+            else npc = (rif.ex_mem_out.zero) ? pc4 : rif.ex_mem_out.baddr;
+          end
+        end
         default:   npc = pc4; 
       endcase
     end
@@ -202,7 +229,7 @@ module datapath (
   assign rif.mem_wb_in.regtbw = rif.ex_mem_out.regtbw; 
   assign rif.mem_wb_in.halt = rif.ex_mem_out.halt; 
   assign rif.mem_wb_in.regsrc = rif.ex_mem_out.regsrc; 
-  //assign rif.mem_wb_in.regWEN = rif.ex_mem_out.regWEN; 
+  assign rif.mem_wb_in.regWEN = rif.ex_mem_out.regWEN; 
   assign rif.mem_wb_in.imm32 = rif.ex_mem_out.imm32; 
   assign rif.mem_wb_in.baddr = rif.ex_mem_out.baddr; 
   assign rif.mem_wb_in.rdat2 = rif.ex_mem_out.rdat2; 
@@ -211,15 +238,6 @@ module datapath (
   assign rif.mem_wb_in.npc = rif.ex_mem_out.npc; 
   assign rif.mem_wb_in.datomic = rif.ex_mem_out.datomic; 
   assign rif.mem_wb_in.dWEN = rif.ex_mem_out.dWEN; 
-  always_comb begin
-    if (rif.ex_mem_out.datomic && rif.ex_mem_out.dWEN) begin
-      // sc. 
-      rif.mem_wb_in.regWEN = (dpif.dmemload == 32'h0) ? 1'b1 : 1'b0; 
-    end
-    else begin
-      rif.mem_wb_in.regWEN = rif.ex_mem_out.regWEN; 
-    end
-  end
   // cpu tracker signals.
   opcode_t cpu_tracker_opcode;
   assign cpu_tracker_opcode = opcode_t'(rif.mem_wb_out.imemload[31:26]);  
@@ -239,8 +257,8 @@ module datapath (
   //assign dpif.dmemstore = rif.ex_mem_out.rdat2_fwd;
   assign dpif.datomic = rif.ex_mem_out.datomic; 
   always_comb begin
-    dpif.dmemstore = rif.ex_mem_out.rdat2_fwd;
-    if (rif.mem_wb_out.dWEN && rif.mem_wb_out.datomic && rif.mem_wb_out.dload == word_t'(0) &&
+    dpif.dmemstore = rif.ex_mem_out.rdat2;
+    if (rif.mem_wb_out.dWEN && rif.mem_wb_out.datomic &&
         regbits_t'(rif.mem_wb_out.imemload[20:16]) == regbits_t'(rif.ex_mem_out.imemload[20:16])) begin
       dpif.dmemstore = rfif.wdat; 
     end

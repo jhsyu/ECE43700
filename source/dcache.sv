@@ -22,13 +22,28 @@ module dcache(
     dcache_frame hit_frame, snp_hit_frame;  
     logic evict_id; 
     logic [4:0] dump_idx, nxt_dump_idx; // 0:blkoff 1:frame [4:2] set
+    word_t link_reg, link_addr; 
     assign daddr = dcachef_t'(dcif.dmemaddr); 
     assign snpaddr = dcachef_t'(cif.ccsnoopaddr); 
     assign evict_id = ~set[daddr.idx].lru_id;
     //assign dcif.dmemload = set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff];
     // check the cache frame and assert dhit.
     logic dhit; // raw signal that just determine if the data present in this cache. 
-    assign dcif.dhit = dhit & (dcif.dmemREN | (dcif.dmemWEN & hit_frame.dirty)); 
+    //assign dcif.dhit = dhit & (dcif.dmemREN | (dcif.dmemWEN & (~dcif.datomic & hit_frame.dirty))); 
+    always_comb begin
+        if (dcif.dmemREN && dhit) begin
+            dcif.dhit = 1'b1;
+        end
+        else if (dcif.dmemWEN && dhit) begin
+            if (dcif.datomic) begin
+                dcif.dhit = (link_reg == link_addr) ? hit_frame.dirty : 1'b1; 
+            end
+            else begin
+                dcif.dhit = hit_frame.dirty; 
+            end
+        end
+        else dcif.dhit = 1'b0; 
+    end
     // dirty: wait until the content in dcache updated then assert dhit. 
     // the dirty bit will be set only after the invalidation is done. 
     // 3 cases here:
@@ -87,7 +102,6 @@ module dcache(
 
     // link_reg contains the address of data memory access. 
     // link_addr stores the start address of the coresponding frame in cache.
-    word_t link_reg, link_addr; 
     assign link_addr = {dcif.dmemaddr[31:3], 3'b0}; 
     // initialization, load from memory, update lru_id. 
     // all the content of cacheline will be updated in this combinational block. 
@@ -105,7 +119,7 @@ module dcache(
     always_ff @(posedge CLK or negedge nRST) begin
         if (~nRST) begin
             set <= '0; 
-            link_reg <= '1; 
+            link_reg <= '0; 
         end
         else if ((cif.ccinv | cif.ccwait) & snp_hit) begin
             // invalid the copy of THIS dcache. 
@@ -116,16 +130,16 @@ module dcache(
             // if just wait, keep the current case. 
             set[snpaddr.idx].lru_id <= (cif.ccinv) ?  ~snp_hit_frame_idx : set[snpaddr.idx].lru_id; 
             // invalidation by other cores.
-            link_reg <= (link_reg == word_t'({snpaddr[31:3], 3'b0})) ? '1 : link_reg; 
+            link_reg <= (link_reg == word_t'({snpaddr[31:3], 3'b0}) && cif.ccinv) ? 32'hBAD1BAD1 : link_reg; 
         end
 
         else if (dcif.dhit & dcif.dmemWEN) begin
-            if (~dcif.datomic || (dcif.datomic && link_reg == dcif.dmemaddr)) begin
+            if (~dcif.datomic || (dcif.datomic && link_reg == link_addr)) begin
                 set[daddr.idx].lru_id <= hit_frame_idx; 
                 set[daddr.idx].frame[hit_frame_idx].data[daddr.blkoff] <= dcif.dmemstore; 
                 set[daddr.idx].frame[hit_frame_idx].dirty <= 1'b1; 
                 // SW/SC will invalidate the link register. 
-                link_reg <= (link_reg == word_t'({dcif.dmemaddr[31:3], 3'b0})) ? '1 : link_reg; 
+                link_reg <= (link_reg == link_addr && dcif.dhit) ? 32'hBAD2BAD2 : link_reg; 
             end
         end
         else if (dcif.dhit & dcif.dmemREN) begin
@@ -193,7 +207,8 @@ module dcache(
                     // and the data in the cache should be at M. 
                     nds = FWD0; 
                 end
-                else if (dcif.dmemWEN && ~cif.ccwait && dhit && ~hit_frame.dirty) begin
+                else if (dcif.dmemWEN && ~cif.ccwait && dhit && ~hit_frame.dirty && 
+                        (~dcif.datomic || dcif.datomic && link_reg == link_addr)) begin
                     // the case is that once writing to a shared block, 
                     // invalidate other copies in all cache.
                     // this should be happening before the dcif.dhit.
