@@ -178,7 +178,7 @@ module datapath (
   assign rif.ex_mem_in.datomic = rif.id_ex_out.datomic; 
 
   // PC
-
+  logic sc_flush; 
   always_comb begin : PC_MUX
     if (huif.pcen && dpif.ihit && ~mem_op_stall) begin
       casez (rif.ex_mem_out.pcsrc)
@@ -186,29 +186,36 @@ module datapath (
         PCSRC_JAL: npc = rif.ex_mem_out.jaddr; 
         PCSRC_BEQ: begin 
           npc = (rif.ex_mem_out.zero) ? rif.ex_mem_out.baddr : pc4; 
+          sc_flush = 1'b0; 
           if(rif.mem_wb_out.datomic && rif.mem_wb_out.dWEN) begin
             // sc fails. write to register file.
             // sc rt
             // beq rs/rt
             if(rif.mem_wb_out.imemload[20:16] == rif.ex_mem_out.imemload[25:21]) begin
               npc = (rfif.wdat == rif.ex_mem_out.rdat1) ? rif.ex_mem_out.baddr : pc4; 
+              sc_flush = (rfif.wdat == rif.ex_mem_out.rdat1) ? 1'b1 : 1'b0; 
             end
             else if (rif.mem_wb_out.imemload[20:16] == rif.ex_mem_out.imemload[20:16]) begin
               npc = (rfif.wdat == rif.ex_mem_out.rdat2) ? rif.ex_mem_out.baddr : pc4; 
+              sc_flush = (rfif.wdat == rif.ex_mem_out.rdat2) ? 1'b1 : 1'b0;  
             end
+            else npc = (rif.ex_mem_out.zero) ? rif.ex_mem_out.baddr : pc4; 
           end
         end
         PCSRC_BNE: begin 
           npc = (rif.ex_mem_out.zero) ? pc4 : rif.ex_mem_out.baddr;
+          sc_flush = 1'b0; 
           if(rif.mem_wb_out.datomic && rif.mem_wb_out.dWEN) begin
             // sc fails. write to register file.
             // sc rt
             // beq rs/rt
             if(rif.mem_wb_out.imemload[20:16] == rif.ex_mem_out.imemload[25:21]) begin
               npc = (rfif.wdat == rif.ex_mem_out.rdat1) ? pc4 : rif.ex_mem_out.baddr; 
+              sc_flush = (rfif.wdat == rif.ex_mem_out.rdat1) ? 1'b0 : 1'b1;  
             end
             else if (rif.mem_wb_out.imemload[20:16] == rif.ex_mem_out.imemload[20:16]) begin
               npc = (rfif.wdat == rif.ex_mem_out.rdat2) ? pc4 : rif.ex_mem_out.baddr; 
+              sc_flush = (rfif.wdat == rif.ex_mem_out.rdat2) ? 1'b0 : 1'b1; 
             end
             else npc = (rif.ex_mem_out.zero) ? pc4 : rif.ex_mem_out.baddr;
           end
@@ -291,9 +298,9 @@ module datapath (
   assign rif.id_ex_en = (huif.id_ex_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
   assign rif.ex_mem_en = (huif.ex_mem_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
   assign rif.mem_wb_en = (huif.mem_wb_en & (dpif.ihit | dpif.dhit) & ~mem_op_stall); 
-  assign rif.if_id_flush = huif.if_id_flush; 
-  assign rif.id_ex_flush = huif.id_ex_flush; 
-  assign rif.ex_mem_flush = huif.ex_mem_flush; 
+  assign rif.if_id_flush = huif.if_id_flush || sc_flush; 
+  assign rif.id_ex_flush = huif.id_ex_flush || sc_flush; 
+  assign rif.ex_mem_flush = huif.ex_mem_flush || sc_flush; 
   assign rif.mem_wb_flush = huif.mem_wb_flush; 
 
 
