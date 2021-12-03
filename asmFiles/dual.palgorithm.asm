@@ -147,7 +147,7 @@ mainp0:
   lw    $t0, 0($t2)         # load buffer occupancy value
   addiu $t4, $t0, 1         # increment buffer occupancy
   sllv  $t1, $t5, $t0       # shift buff_occ left by 2
-  ori   $t5, $zero, 2     # temp variable holds max buffer size
+  ori   $t5, $zero, 256     # temp variable holds max buffer size
   beq   $s1, $t5, EXIT0     # if loop has run 256 times, exit loop
   beq   $t0, $t5, EXIT0     # if buff_occ == 256, exit loop (redundant but safer)
   addu  $t1, $t1, $t3       # new buffer index address pointer
@@ -225,7 +225,7 @@ mainp1:
   ori   $a0, $zero, l1      # move lock to arguement register
   jal   lock                # try to aquire the lock
   # critical code segment
-  ori   $t5, $zero, 2     # set max loop counter
+  ori   $t5, $zero, 256     # set max loop counter
   beq   $s1, $t5, EXIT1     # if loop count is 256, leave loop
   ori   $t5, $zero, 2       # temp register for shifting left by 2
   ori   $t2, $zero, buff_occ
