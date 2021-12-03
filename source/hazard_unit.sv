@@ -28,6 +28,13 @@ module hazard_unit (
                 huif.pcen = 1'b0;        // stall the increment of pcen. 
             end            
         end
+        else if (huif.dmemWEN && huif.datomic && (|huif.ex_rd)) begin
+            if (huif.ex_rd == huif.id_rt || huif.ex_rd == huif.id_rs) begin
+                huif.id_ex_flush = 1'b1; 
+                huif.if_id_en = 1'b0; 
+                huif.pcen = 1'b0; 
+            end
+        end
         // deal with branch mis-predictions.
         casez(huif.mem_pcsrc) 
             PCSRC_BEQ: phit = (huif.zero) ? 1'b0 : 1'b1; 

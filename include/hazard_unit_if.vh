@@ -23,10 +23,10 @@ interface hazard_unit_if;
     logic if_id_en, id_ex_en, ex_mem_en, mem_wb_en; 
     logic if_id_flush, id_ex_flush, ex_mem_flush, mem_wb_flush; 
     logic pcen; 
-    logic dmemREN; 
+    logic dmemREN, dmemWEN, datomic; 
 
     modport hu (
-        input   dmemREN, halt, ex_regWEN, mem_regWEN, 
+        input   dmemREN, dmemWEN, datomic, halt, ex_regWEN, mem_regWEN, 
                 id_rs, id_rt, ex_rd, mem_rd,  
                 zero, mem_pcsrc, dhit, ihit, 
         output  pcen, 

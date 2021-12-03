@@ -104,6 +104,10 @@ module coherence_control (
 			end
 			SNP2: begin
 				ccif.ccwait[~prid] = 1'b1; 
+				nxt_s = SNP3; 
+			end
+			SNP3: begin
+				ccif.ccwait[~prid] = 1'b1; 
 				//ccif.ccinv[~prid] = ccif.ccwrite[prid]; 
 				if (ccif.cctrans[~prid] && ccif.ccwrite[prid]) nxt_s = FWD1; // if write no need to modify mem. 
 				else if (ccif.cctrans[~prid] && ~ccif.ccwrite[prid]) nxt_s = FWDWB1;

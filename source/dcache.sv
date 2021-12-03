@@ -127,7 +127,9 @@ module dcache(
             // invalid the copy of THIS dcache. 
             set[snpaddr.idx].frame[snp_hit_frame_idx].valid <= ~cif.ccinv; 
             // will be moved to other caches (FWD) or write to mem (FWDWB), or get invalidated. 
-            set[snpaddr.idx].frame[snp_hit_frame_idx].dirty <= 1'b0; 
+            if (ds == DC_FWD0 || ds == DC_FWD1 || cif.ccinv) begin
+                set[snpaddr.idx].frame[snp_hit_frame_idx].dirty <= 0;  
+            end
             // if invalidated., replace this block in the incomming conflict. 
             // if just wait, keep the current case. 
             set[snpaddr.idx].lru_id <= (cif.ccinv) ?  ~snp_hit_frame_idx : set[snpaddr.idx].lru_id; 
@@ -209,7 +211,7 @@ module dcache(
                     // and the data in the cache should be at M. 
                     nds = DC_FWD0; 
                 end
-                else if (dcif.dmemWEN && ~cif.ccwait && dhit && ~hit_frame.dirty && 
+                else if (dcif.dmemWEN && ~cif.ccwait && ~cif.ccinv && dhit && ~hit_frame.dirty && 
                         (~dcif.datomic || dcif.datomic && link_reg == link_addr)) begin
                     // the case is that once writing to a shared block, 
                     // invalidate other copies in all cache.
@@ -284,7 +286,7 @@ module dcache(
                         nds = (cif.dwait) ? DC_FLUSH0 : DC_FLUSH1; 
                     end
                     else begin
-                        cif.cctrans = 1'b0; 
+                        cif.cctrans = 0; 
                         cif.dWEN = 1'b0; 
                         cif.daddr = '0; 
                         cif.dstore = 'hBAD1BAD1;
